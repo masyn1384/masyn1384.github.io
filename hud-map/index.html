@@ -9,89 +9,72 @@
 <style>
   *{box-sizing:border-box}
   html,body{margin:0;padding:0;height:100%;background:#000;color:#fff;font-family:Tahoma,'Segoe UI',sans-serif;overflow:hidden}
-  #app{display:flex;flex-direction:column;height:100%}
-  /* mirrorWrap همان چیزی است که برعکس می‌شود: نقشه + نوار اطلاعات بالا.
-     دکمه‌ها بیرون آن می‌مانند تا همیشه قابل لمس و خوانا باشند. */
-  #mirrorWrap{position:relative;flex:1;min-height:0;transition:transform .15s}
+  #app{position:relative;width:100%;height:100%}
+  /* همان چیزی که در حالت آینه برعکس می‌شود: فقط نقشه و نوار اطلاعات مسیر.
+     دکمه‌ها بیرون آن می‌مانند تا همیشه قابل لمس باشند. */
+  #mirrorWrap{position:absolute;inset:0;transition:transform .15s}
   #mirrorWrap.mirrored{transform:scaleX(-1)}
   #map{position:absolute;inset:0;background:#000}
   .leaflet-container{background:#000;font-family:Tahoma,sans-serif}
-  #panel{background:#0d0d0d;padding:10px 12px 12px;border-bottom:1px solid #222;z-index:10}
-  #panel h1{font-size:16px;margin:0 0 8px}
-  .row{display:flex;gap:8px;align-items:stretch;margin-bottom:8px;position:relative}
-  .row label{width:44px;display:flex;align-items:center;color:#aaa;font-size:13px}
-  .row input{flex:1;background:#1c1c1c;border:1px solid #333;color:#fff;border-radius:10px;padding:10px 12px;font-size:15px;font-family:inherit;outline:none}
-  .row input:focus{border-color:#00e5ff}
-  .sugg{position:absolute;top:100%;right:44px;left:0;background:#1c1c1c;border:1px solid #333;border-radius:10px;margin-top:4px;z-index:50;max-height:220px;overflow:auto;display:none}
-  .sugg div{padding:10px 12px;border-bottom:1px solid #2a2a2a;cursor:pointer;font-size:14px}
+  /* نقشه‌ی تیره بدون نیاز به کلید: تایل روشن OSM با فیلتر وارونه می‌شود */
+  .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightness(.92) contrast(.92)}
+  body.light-map .leaflet-tile-pane{filter:none}
+  .ui{position:absolute;z-index:2000}
+  /* کارت مسیر مثل نشان: شناور روی نقشه، جمع‌وجور */
+  #routeCard{top:12px;right:12px;left:12px;background:rgba(13,13,13,.94);border-radius:18px;padding:12px;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+  #routeCard .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  #routeCard .head b{font-size:15px}
+  #gearBtn{background:#222;border:1px solid #444;color:#fff;border-radius:10px;padding:6px 10px;font-size:16px;cursor:pointer}
+  .frow{display:flex;gap:8px;align-items:center;margin-bottom:8px;position:relative}
+  .frow:last-child{margin-bottom:0}
+  .dot{width:12px;height:12px;border-radius:50%;flex:none}
+  .dot.o{background:#2ecc71}.dot.d{background:#e5484d}
+  .frow input{flex:1;background:#1c1c1c;border:1px solid #333;color:#fff;border-radius:12px;padding:11px 12px;font-size:15px;font-family:inherit;outline:none}
+  .frow input:focus{border-color:#00e5ff}
+  #swapBtn{background:#222;border:1px solid #444;color:#fff;border-radius:12px;padding:10px 12px;font-size:16px;cursor:pointer}
+  .sugg{position:absolute;top:100%;right:0;left:0;background:#1c1c1c;border:1px solid #333;border-radius:12px;margin-top:4px;z-index:60;max-height:220px;overflow:auto;display:none}
+  .sugg div{padding:11px 12px;border-bottom:1px solid #2a2a2a;cursor:pointer;font-size:14px}
   .sugg div:last-child{border-bottom:none}
   .sugg div:active{background:#00e5ff;color:#000}
-  .btn{border:none;border-radius:12px;padding:12px 14px;font-size:15px;font-family:inherit;cursor:pointer;font-weight:bold}
+  /* دکمه‌ی شروع پایین صفحه، مثل نشان */
+  #startBar{bottom:12px;right:12px;left:12px}
+  #startBar button{width:100%;border:none;border-radius:16px;padding:16px;font-size:18px;font-weight:bold;font-family:inherit;cursor:pointer;background:#00e5ff;color:#000}
+  /* دکمه‌ی شناور موقعیت، روی نقشه */
+  #gpsBtn{left:12px;bottom:84px;width:52px;height:52px;border-radius:50%;border:none;background:#fff;color:#000;font-size:22px;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,.5)}
+  /* نوار اطلاعات مسیر در حالت ناوبری (داخل آینه) */
+  #navInfo{display:none;position:absolute;top:12px;right:12px;left:12px;background:rgba(0,0,0,.78);border-radius:14px;padding:10px 12px;font-size:14px;gap:12px;z-index:10}
+  #navInfo b{color:#00e5ff}
+  #hudBar{display:none;position:absolute;top:12px;right:12px;left:12px;background:rgba(0,0,0,.8);border-radius:14px;padding:12px;text-align:center;z-index:10}
+  #hudBar .big{font-size:34px;font-weight:bold;color:#00e5ff;line-height:1.2}
+  #hudBar .small{font-size:14px;color:#ddd}
+  /* دکمه‌های ناوبری پایین صفحه */
+  #dock{display:none;bottom:12px;right:12px;left:12px;gap:8px}
+  #dock .btn{flex:1;border:none;border-radius:14px;padding:14px 6px;font-size:14px;font-weight:bold;font-family:inherit;cursor:pointer}
   .btn-cyan{background:#00e5ff;color:#000}
   .btn-dark{background:#222;color:#fff;border:1px solid #444}
   .btn-red{background:#e5484d;color:#fff}
-  .btn:disabled{opacity:.4}
-  #actions{display:flex;gap:8px}
-  #actions .btn{flex:1}
-  #mapMode{display:flex;gap:8px;margin-top:8px}
-  #mapMode .chip{flex:1;text-align:center;padding:8px;border-radius:10px;background:#1c1c1c;border:1px solid #333;font-size:13px;color:#ccc;cursor:pointer}
-  #mapMode .chip.on{background:#00e5ff;color:#000;border-color:#00e5ff;font-weight:bold}
-  #status{font-size:12px;color:#ffb020;min-height:16px;margin-top:6px}
-  #infoBar{display:none;gap:10px;align-items:center;background:rgba(0,0,0,.75);padding:8px 12px;border-bottom:1px solid #222;font-size:14px}
-  #infoBar b{color:#00e5ff}
-  #dock{display:none;gap:8px;padding:10px 12px;background:#0d0d0d;border-top:1px solid #222}
-  #dock .btn{flex:1}
-  #hudBar{display:none;background:rgba(0,0,0,.8);padding:10px 12px;text-align:center;border-bottom:1px solid #222}
-  #hudBar .big{font-size:30px;font-weight:bold;color:#00e5ff;line-height:1.2}
-  #hudBar .small{font-size:14px;color:#ddd}
-  body.hud-mode #panel, body.hud-mode #infoBar{display:none !important}
-  body.hud-mode #hudBar{display:block}
-  body.nav-mode #infoBar{display:flex}
+  body.nav-mode #routeCard, body.nav-mode #startBar, body.nav-mode #gpsBtn{display:none}
+  body.nav-mode #navInfo{display:flex}
   body.nav-mode #dock{display:flex}
-  body.nav-mode #panel{display:none}
-  body.nav-mode #startRow{display:none}
-  #mirrorHint{display:none;font-size:12px;color:#ffb020;text-align:center;padding:4px 0 0}
+  body.hud-mode #navInfo{display:none !important}
+  body.hud-mode #hudBar{display:block}
+  #mirrorHint{display:none;position:absolute;bottom:76px;right:12px;left:12px;text-align:center;font-size:12px;color:#ffb020;z-index:2000;background:rgba(0,0,0,.6);border-radius:10px;padding:6px}
   #mirrorHint.on{display:block}
-  details{margin-top:8px}
-  details summary{font-size:12px;color:#999;cursor:pointer}
-  details p{font-size:12px;color:#999;line-height:1.9;margin:6px 0 0}
-  details input{width:100%;background:#1c1c1c;border:1px solid #333;color:#fff;border-radius:8px;padding:8px;font-family:inherit;direction:ltr;text-align:left;margin-top:4px}
+  /* پیام کوتاه محو‌شونده، به‌جای متن زرد دائمی */
+  #toast{display:none;position:absolute;top:50%;right:24px;left:24px;transform:translateY(-50%);background:rgba(20,20,20,.95);border:1px solid #444;border-radius:14px;padding:14px;text-align:center;font-size:14px;line-height:1.9;z-index:3000}
+  /* پنجره‌ی تنظیمات: فقط با چرخ‌دنده باز می‌شود */
+  #settingsSheet{display:none;position:absolute;bottom:12px;right:12px;left:12px;background:#111;border:1px solid #333;border-radius:18px;padding:14px;z-index:2500}
+  #settingsSheet p{font-size:13px;color:#bbb;line-height:1.9;margin:0 0 8px}
+  #settingsSheet input{width:100%;background:#1c1c1c;border:1px solid #333;color:#fff;border-radius:10px;padding:11px;font-family:inherit;direction:ltr;text-align:left}
+  #settingsSheet label{font-size:13px;color:#ddd;display:block;margin-top:10px;cursor:pointer}
+  #closeSettings{margin-top:12px;width:100%;border:none;border-radius:12px;padding:12px;font-size:15px;font-weight:bold;font-family:inherit;cursor:pointer;background:#00e5ff;color:#000}
 </style>
 </head>
 <body>
 <div id="app">
-  <div id="panel">
-    <h1>نقشه شیشه</h1>
-    <div class="row">
-      <label>مبدا</label>
-      <input id="originInput" placeholder="جست‌وجو یا «موقعیت من»…" autocomplete="off">
-      <div class="sugg" id="originSugg"></div>
-    </div>
-    <div class="row">
-      <label>مقصد</label>
-      <input id="destInput" placeholder="کجا می‌خوای بری؟" autocomplete="off">
-      <div class="sugg" id="destSugg"></div>
-    </div>
-    <div id="actions">
-      <button class="btn btn-dark" id="myLocBtn">📍 موقعیت من</button>
-      <button class="btn btn-dark" id="swapBtn">⇅ جابه‌جا</button>
-      <button class="btn btn-cyan" id="startBtn">شروع ▶</button>
-    </div>
-    <div id="mapMode">
-      <div class="chip" id="chipOrigin">ضربه روی نقشه = مبدا</div>
-      <div class="chip on" id="chipDest">ضربه روی نقشه = مقصد</div>
-    </div>
-    <div id="status"></div>
-    <details>
-      <summary>تنظیمات مسیریابی (اختیاری)</summary>
-      <p>پیش‌فرض: مسیریابی رایگان با داده‌ی OpenStreetMap (بدون کلید). اگر کلید رایگان نشان را از پنل توسعه‌دهندگان نشان گرفتی، اینجا بذار تا مسیریابی با داده‌ی نشان انجام شود. کلید فقط روی همین گوشی ذخیره می‌شود و جایی فرستاده نمی‌شود.</p>
-      <input id="neshanKey" placeholder="Api-Key نشان (اختیاری)" autocomplete="off">
-    </details>
-  </div>
-
   <div id="mirrorWrap">
     <div id="map"></div>
-    <div id="infoBar">
+    <div id="navInfo">
       <span>مسیر: <b id="infoDist">—</b></span>
       <span>زمان: <b id="infoTime">—</b></span>
       <span id="infoNext"></span>
@@ -102,37 +85,68 @@
     </div>
   </div>
 
-  <div id="dock">
+  <div class="ui" id="routeCard">
+    <div class="head"><b>نقشه شیشه</b><button id="gearBtn">⚙️</button></div>
+    <div class="frow">
+      <span class="dot o"></span>
+      <input id="originInput" placeholder="مبدا" autocomplete="off">
+      <div class="sugg" id="originSugg"></div>
+      <button id="swapBtn" title="جابه‌جا">⇅</button>
+    </div>
+    <div class="frow">
+      <span class="dot d"></span>
+      <input id="destInput" placeholder="مقصد کجاست؟" autocomplete="off">
+      <div class="sugg" id="destSugg"></div>
+    </div>
+  </div>
+
+  <button class="ui" id="gpsBtn" title="موقعیت من">📍</button>
+
+  <div class="ui" id="startBar"><button id="startBtn">شروع ▶</button></div>
+
+  <div class="ui" id="dock">
     <button class="btn btn-cyan" id="hudBtn">HUD</button>
     <button class="btn btn-dark" id="mirrorBtn">برعکس صفحه</button>
     <button class="btn btn-dark" id="rerouteBtn">مسیر جدید</button>
     <button class="btn btn-red" id="endBtn">پایان</button>
   </div>
   <div id="mirrorHint">حالت آینه فعال است — در این حالت ضربه روی نقشه غیرفعال است. برای برگشت، «برعکس صفحه» را بزن.</div>
+
+  <div id="toast"></div>
+
+  <div id="settingsSheet">
+    <p>تنظیمات — مسیریابی پیش‌فرض با OpenStreetMap و بدون کلید انجام می‌شود. اگر کلید نشان داری، اینجا بذار تا مسیر با داده‌ی نشان حساب شود. کلید فقط روی همین گوشی ذخیره می‌شود.</p>
+    <input id="neshanKey" placeholder="Api-Key نشان (اختیاری)" autocomplete="off">
+    <label><input type="checkbox" id="lightMapToggle"> نقشه روشن (به‌جای تیره)</label>
+    <button id="closeSettings">بستن</button>
+  </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 'use strict';
 /* بدون هیچ صدایی: نه راهنمای صوتی، نه بوق. فقط نقشه و متن. */
 var map = L.map('map', { zoomControl: false }).setView([30.67, 51.58], 13);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  maxZoom: 20, subdomains: 'abcd',
-  attribution: '© OpenStreetMap contributors © CARTO'
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
 var state = {
-  origin: null, dest: null,          // {lat, lon, name}
-  mapTapTarget: 'dest',
+  origin: null, dest: null,
   routeCoords: [], routeLayer: null, casingLayer: null,
-  maneuvers: [],                      // OSRM: [{at (m along route), dist, text, arrow}]
-  totalDist: 0, totalTime: 0,
+  maneuvers: [], totalDist: 0, totalTime: 0,
   navMode: false, hudMode: false, mirrored: false,
-  watchId: null, userMarker: null, userPos: null,
-  wakeLock: null
+  watchId: null, userMarker: null, userPos: null, wakeLock: null
 };
-
 var $ = function(id){ return document.getElementById(id); };
-function setStatus(t){ $('status').textContent = t || ''; }
+var toastTimer = null;
+function showToast(t, ms){
+  var el = $('toast');
+  el.textContent = t;
+  el.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.style.display = 'none'; }, ms || 4000);
+}
 function fmtDist(m){
   if (m == null) return '—';
   if (m < 1000) return Math.round(m) + ' متر';
@@ -152,24 +166,21 @@ function haversine(a, b){
   return 2 * R * Math.asin(Math.sqrt(x));
 }
 
-/* ---------- نشانگرها ---------- */
 var originMarker = null, destMarker = null;
 function setPoint(kind, lat, lon, name){
-  var ll = [lat, lon];
   if (kind === 'origin'){
     state.origin = { lat: lat, lon: lon, name: name || '' };
     if (originMarker) map.removeLayer(originMarker);
-    originMarker = L.marker(ll, { title: 'مبدا' }).addTo(map);
+    originMarker = L.marker([lat, lon], { title: 'مبدا' }).addTo(map);
     $('originInput').value = name || (lat.toFixed(5) + ', ' + lon.toFixed(5));
   } else {
     state.dest = { lat: lat, lon: lon, name: name || '' };
     if (destMarker) map.removeLayer(destMarker);
-    destMarker = L.marker(ll, { title: 'مقصد' }).addTo(map);
+    destMarker = L.marker([lat, lon], { title: 'مقصد' }).addTo(map);
     $('destInput').value = name || (lat.toFixed(5) + ', ' + lon.toFixed(5));
   }
 }
 
-/* ---------- جست‌وجو با Photon (نام فارسی، بدون کلید) ---------- */
 function bindSearch(inputEl, suggEl, kind){
   var timer = null;
   inputEl.addEventListener('input', function(){
@@ -185,8 +196,7 @@ function bindSearch(inputEl, suggEl, kind){
         suggEl.innerHTML = '';
         feats.forEach(function(f){
           var p = f.properties || {};
-          var parts = [p.name, p.city, p.state, p.country].filter(Boolean);
-          var label = parts.join('، ') || q;
+          var label = [p.name, p.city, p.state, p.country].filter(Boolean).join('، ') || q;
           var d = document.createElement('div');
           d.textContent = label;
           d.addEventListener('click', function(){
@@ -208,20 +218,12 @@ function bindSearch(inputEl, suggEl, kind){
 bindSearch($('originInput'), $('originSugg'), 'origin');
 bindSearch($('destInput'), $('destSugg'), 'dest');
 
-/* ---------- ضربه روی نقشه ---------- */
-function setMapTapTarget(t){
-  state.mapTapTarget = t;
-  $('chipOrigin').classList.toggle('on', t === 'origin');
-  $('chipDest').classList.toggle('on', t === 'dest');
-}
-$('chipOrigin').addEventListener('click', function(){ setMapTapTarget('origin'); });
-$('chipDest').addEventListener('click', function(){ setMapTapTarget('dest'); });
+/* ضربه روی نقشه در حالت برنامه‌ریزی = مقصد (مثل نشان) */
 map.on('click', function(e){
-  if (state.mirrored) return; // در حالت آینه، مختصات ضربه وارونه می‌شود؛ پس غیرفعال است
-  setPoint(state.mapTapTarget, e.latlng.lat, e.latlng.lng, 'نقطه روی نقشه');
+  if (state.mirrored || state.navMode) return;
+  setPoint('dest', e.latlng.lat, e.latlng.lng, 'نقطه روی نقشه');
 });
 
-/* ---------- موقعیت من ---------- */
 function locateOnce(){
   return new Promise(function(resolve, reject){
     if (!navigator.geolocation){ reject(new Error('no-geo')); return; }
@@ -231,14 +233,15 @@ function locateOnce(){
     { enableHighAccuracy: true, timeout: 12000, maximumAge: 5000 });
   });
 }
-$('myLocBtn').addEventListener('click', function(){
-  setStatus('در حال پیدا کردن موقعیت…');
+function useMyLocation(){
   locateOnce().then(function(pos){
     setPoint('origin', pos.lat, pos.lon, 'موقعیت من');
     map.setView([pos.lat, pos.lon], 15);
-    setStatus('');
-  }).catch(function(){ setStatus('موقعیت پیدا نشد؛ دسترسی GPS را بررسی کن یا مبدا را دستی انتخاب کن.'); });
-});
+  }).catch(function(){
+    showToast('موقعیت پیدا نشد؛ دسترسی GPS را بده یا مبدا را دستی انتخاب کن.');
+  });
+}
+$('gpsBtn').addEventListener('click', useMyLocation);
 $('swapBtn').addEventListener('click', function(){
   var o = state.origin, d = state.dest;
   if (!o && !d) return;
@@ -251,7 +254,13 @@ $('swapBtn').addEventListener('click', function(){
   $('destInput').value = state.dest ? (state.dest.name || '') : '';
 });
 
-/* ---------- دیکد پلی‌لاین گوگلی (برای پاسخ نشان) ---------- */
+/* تنظیمات: فقط با چرخ‌دنده */
+$('gearBtn').addEventListener('click', function(){ $('settingsSheet').style.display = 'block'; });
+$('closeSettings').addEventListener('click', function(){ $('settingsSheet').style.display = 'none'; });
+$('lightMapToggle').addEventListener('change', function(e){
+  document.body.classList.toggle('light-map', e.target.checked);
+});
+
 function decodePolyline(str){
   var coords = [], index = 0, lat = 0, lon = 0;
   while (index < str.length){
@@ -265,15 +274,12 @@ function decodePolyline(str){
   }
   return coords;
 }
-
-/* ---------- مسیریابی ---------- */
 function neshanKey(){
   var v = ($('neshanKey').value || '').trim();
   if (v){ try { localStorage.setItem('neshan_key', v); } catch(e){} return v; }
   try { return localStorage.getItem('neshan_key') || ''; } catch(e){ return ''; }
 }
 try { var saved = localStorage.getItem('neshan_key'); if (saved) $('neshanKey').value = saved; } catch(e){}
-
 function routeWithOSRM(o, d){
   var url = 'https://routing.openstreetmap.de/routed-car/route/v1/driving/' +
     o.lon + ',' + o.lat + ';' + d.lon + ',' + d.lat +
@@ -326,12 +332,10 @@ function fetchRoute(o, d){
   var key = neshanKey();
   var p = key ? routeWithNeshan(o, d, key) : routeWithOSRM(o, d);
   return p.catch(function(e){
-    if (key) return routeWithOSRM(o, d); // اگر نشان جواب نداد، با OSM تلاش کن
+    if (key) return routeWithOSRM(o, d);
     throw e;
   });
 }
-
-/* ---------- فاصله‌ی مانده روی مسیر ---------- */
 function progressAlongRoute(pos){
   var coords = state.routeCoords;
   if (!coords.length) return null;
@@ -346,7 +350,7 @@ function progressAlongRoute(pos){
     var dd = haversine(pos, proj);
     if (!best || dd < best.dd) best = { dd: dd, seg: i, t: t, proj: proj };
   }
-  if (!best || best.dd > 200) return null; // خیلی دور از مسیر: مانده قابل اعتماد نیست
+  if (!best || best.dd > 200) return null;
   var remain = best.dd, along = 0;
   for (var j = 1; j < best.seg; j++) along += haversine(coords[j-1], coords[j]);
   along += haversine(coords[best.seg-1], best.proj);
@@ -379,8 +383,6 @@ function refreshNavInfo(){
     $('infoNext').textContent = '· مانده: ' + fmtDist(prog.remain) + ' · ' + nextManeuverText(prog.along);
   }
 }
-
-/* ---------- شروع / پایان / مسیر جدید ---------- */
 function requestWakeLock(){
   try {
     if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function(w){ state.wakeLock = w; }).catch(function(){});
@@ -390,12 +392,11 @@ document.addEventListener('visibilitychange', function(){
   if (!document.hidden && state.navMode) requestWakeLock();
 });
 function startNav(){
-  if (!state.origin){ setStatus('اول مبدا را مشخص کن (موقعیت من یا جست‌وجو).'); return; }
-  if (!state.dest){ setStatus('اول مقصد را مشخص کن (جست‌وجو یا ضربه روی نقشه).'); return; }
-  setStatus('در حال گرفتن مسیر…');
+  if (!state.origin){ showToast('اول مبدا را مشخص کن (موقعیت من یا جست‌وجو).'); return; }
+  if (!state.dest){ showToast('اول مقصد را مشخص کن (جست‌وجو یا ضربه روی نقشه).'); return; }
+  showToast('در حال گرفتن مسیر…', 6000);
   fetchRoute(state.origin, state.dest).then(function(res){
     drawRoute(res);
-    setStatus('');
     document.body.classList.add('nav-mode');
     state.navMode = true;
     requestWakeLock();
@@ -414,7 +415,7 @@ function startNav(){
       }, function(){}, { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 });
     }
   }).catch(function(){
-    setStatus('مسیر پیدا نشد. اتصال اینترنت یا مبدا/مقصد را بررسی کن و دوباره بزن.');
+    showToast('مسیر پیدا نشد. اتصال اینترنت یا مبدا/مقصد را بررسی کن و دوباره بزن.');
   });
 }
 function endNav(){
@@ -427,7 +428,6 @@ function endNav(){
   if (state.casingLayer) map.removeLayer(state.casingLayer);
   if (state.routeLayer) map.removeLayer(state.routeLayer);
   state.routeCoords = [];
-  setStatus('');
 }
 $('startBtn').addEventListener('click', startNav);
 $('endBtn').addEventListener('click', endNav);
@@ -436,10 +436,8 @@ $('rerouteBtn').addEventListener('click', function(){
   locateOnce().then(function(pos){
     setPoint('origin', pos.lat, pos.lon, 'موقعیت من');
     return fetchRoute(state.origin, state.dest);
-  }).then(drawRoute).catch(function(){ setStatus('مسیر جدید پیدا نشد.'); });
+  }).then(drawRoute).catch(function(){ showToast('مسیر جدید پیدا نشد.'); });
 });
-
-/* ---------- دکمه‌ی HUD و دکمه‌ی برعکس صفحه (دو دکمه‌ی جدا) ---------- */
 $('hudBtn').addEventListener('click', function(){
   state.hudMode = !state.hudMode;
   document.body.classList.toggle('hud-mode', state.hudMode);
@@ -453,12 +451,12 @@ $('mirrorBtn').addEventListener('click', function(){
   $('mirrorBtn').textContent = state.mirrored ? 'برگردوندن صفحه' : 'برعکس صفحه';
   setTimeout(function(){ map.invalidateSize(); }, 50);
 });
-
-/* ---------- شروع: اگر GPS اجازه داد، مبدا را خودکار بگذار ---------- */
 locateOnce().then(function(pos){
   setPoint('origin', pos.lat, pos.lon, 'موقعیت من');
   map.setView([pos.lat, pos.lon], 14);
-}).catch(function(){});
+}).catch(function(){
+  showToast('موقعیت پیدا نشد؛ مبدا را دستی انتخاب کن.');
+});
 </script>
 </body>
 </html>
