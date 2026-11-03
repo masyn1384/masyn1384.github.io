@@ -86,9 +86,9 @@ body.nav #banner,body.nav #bar{display:flex}
 .tl{display:flex;align-items:center;gap:2vmin}
 #hI svg{width:clamp(38px,11vmin,74px);height:clamp(38px,11vmin,74px);color:var(--b);filter:drop-shadow(0 0 12px #19bfff90);display:block}
 #hD{font-size:clamp(26px,9vmin,62px);font-weight:800;line-height:1;color:#f1fbff;text-shadow:0 0 16px #19bfff55;white-space:nowrap}
-.hSpeed{width:clamp(96px,26vmin,170px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;position:relative;background:rgba(3,12,22,.8);border:1px solid #19bfff44;backdrop-filter:blur(12px);box-shadow:0 8px 30px #0007;flex:none}
+.hSpeed{width:clamp(120px,32vmin,210px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;position:relative;background:rgba(3,12,22,.8);border:1px solid #19bfff44;backdrop-filter:blur(12px);box-shadow:0 8px 30px #0007;flex:none}
 .hSpeed svg{position:absolute;inset:8%;width:84%;height:84%;transform:rotate(-135deg)}
-#hS{font-size:clamp(32px,10vmin,66px);font-weight:800;line-height:1;text-shadow:0 0 14px #19bfff55;text-align:center}
+#hS{font-size:clamp(38px,12vmin,80px);font-weight:800;line-height:1;text-shadow:0 0 14px #19bfff55;text-align:center}
 .unit{font-size:clamp(9px,2vmin,12px);color:#9eb7ca;text-align:center;margin-top:3px}
 #hudCmp{position:absolute;z-index:3;top:4%;left:50%;transform:translateX(-50%);width:clamp(40px,11vmin,60px);height:clamp(40px,11vmin,60px);border-radius:50%;background:rgba(3,12,22,.8);border:1px solid #19bfff44;backdrop-filter:blur(12px);color:var(--ice);pointer-events:none}
 #hudCmp svg{width:100%;height:100%;display:block}
@@ -99,7 +99,7 @@ body.nav #banner,body.nav #bar{display:flex}
 .chip{padding:1.4vmin 2vmin;border-radius:2vmin;background:rgba(3,12,22,.82);border:1px solid #19bfff33;backdrop-filter:blur(12px);font-size:clamp(11px,2.8vmin,17px);color:#cfe3f2;white-space:nowrap}
 .chip b{color:var(--b);font-weight:800}
 .hBtns{display:flex;gap:8px}
-.hBtns button{border:1px solid #19bfff55;background:rgba(3,12,22,.88);color:#e8f8ff;border-radius:2vmin;padding:1.6vmin 2.4vmin;font-size:clamp(11px,2.6vmin,15px);backdrop-filter:blur(12px)}
+.hBtns button{border:1px solid #19bfff55;background:rgba(3,12,22,.88);color:#e8f8ff;border-radius:2vmin;padding:1.6vmin 2.4vmin;font-size:clamp(11px,2.6vmin,15px);backdrop-filter:blur(12px);opacity:.4}.hBtns button:active{opacity:1}
 .hBtns .loc{color:var(--b)}#hudClose{border-color:#ff536455;color:#ff8791}
 #hudView{position:absolute;inset:0}#hudView.mirror{transform:scaleX(-1)}
 #hudMirror{opacity:.4;border-color:#19bfff2e}#hudMirror.on{opacity:1;border-color:#19bfff88}
@@ -240,9 +240,9 @@ async function startNav(){if(!route)return;navOn=true;idx=0;off=0;spoken={};docu
 function fix(raw,sp,h){if(!route||!navOn)return;gps=raw;spd=sp||0;const pts=route.pts,cum=route.cum;
  idx=near(pts,raw,idx,idx+300);const dO=hav(raw,pts[idx]);
  if(dO>70){if(++off>3){off=0;reroute(raw)}}else off=0;
- const p=dO<35?pts[idx]:raw;cp=p;
+ const p=dO<70?pts[idx]:raw;cp=p;
  let j=idx;while(j<pts.length-1&&cum[j]-cum[idx]<30)j++;
- hd=(dO<35&&j>idx)?brg(pts[idx],pts[j]):((h!=null&&!isNaN(h)&&sp>3)?h:hd);
+ hd=(dO<70&&j>idx)?brg(pts[idx],pts[j]):((h!=null&&!isNaN(h)&&sp>3)?h:hd);
  const rem=Math.max(0,route.total-cum[idx]);
  if(rem<25){toast('به مقصد رسیدید');say('به مقصد رسیدید');stopNav();return}
  const nx=route.steps.find(s=>s.i>idx)||route.steps[route.steps.length-1],dn=Math.max(0,cum[nx.i]-cum[idx]),sec=route.dur*rem/Math.max(1,route.total);
@@ -254,7 +254,7 @@ function fix(raw,sp,h){if(!route||!navOn)return;gps=raw;spd=sp||0;const pts=rout
  $('#hS').textContent=fa(Math.round(spd));$('#ring').setAttribute('stroke-dasharray',(Math.min(spd,160)/160*202)+' 270');
  if(!hudOpen)$('#hStat').textContent='LIVE · GPS';
  [[500,'۵۰۰'],[150,'۱۵۰']].forEach(([m,l])=>{const k=nx.i+'_'+m;if(dn<m&&!spoken[k]){spoken[k]=1;say('تا '+l+' متر دیگر، '+txt)}});
- const rest=[p].concat(pts.slice(idx+1));
+ const rest=[pts[idx]].concat(pts.slice(idx+1));
  if(hudOpen&&hudMap){try{const s=hudMap.getSource('hudroute');s&&s.setData({type:'Feature',geometry:{type:'LineString',coordinates:rest}})}catch(e){}
   hudMap.easeTo({center:p,bearing:hd,zoom:18,pitch:50,duration:900,easing:t=>t,offset:[0,hudOff()]})}
  else{showMe(p);try{const s=map.getSource('mainroute');s&&s.setData({type:'Feature',geometry:{type:'LineString',coordinates:rest}})}catch(e){}
