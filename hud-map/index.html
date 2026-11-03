@@ -20,27 +20,33 @@
   .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightness(.92) contrast(.92)}
   body.light-map .leaflet-tile-pane{filter:none}
   .ui{position:absolute;z-index:2000}
-  /* کارت مسیر مثل نشان: شناور روی نقشه، جمع‌وجور */
-  #routeCard{top:12px;right:12px;left:12px;background:rgba(13,13,13,.94);border-radius:18px;padding:12px;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+  /* نوار جست‌وجوی پایین صفحه، مثل صفحه‌ی اصلی نشان */
+  #searchBar{bottom:12px;right:12px;left:12px;background:rgba(20,20,20,.95);border:1px solid #333;border-radius:16px;padding:15px 14px;font-size:16px;color:#ccc;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.5);display:flex;align-items:center;gap:8px}
+  #searchBar b{color:#fff;font-weight:normal}
+  /* دکمه‌های شناور روی نقشه، مثل نشان */
+  .fab{width:52px;height:52px;border-radius:50%;border:none;font-size:22px;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,.5)}
+  #gpsBtn{right:12px;bottom:84px;background:#fff;color:#000}
+  #routeBtn{right:12px;bottom:148px;background:#1a7cff;color:#fff}
+  /* شیت مسیر: فقط وقتی جست‌وجو یا دکمه‌ی مسیریابی زده شود باز می‌شود */
+  #routeCard{display:none;bottom:12px;right:12px;left:12px;background:rgba(13,13,13,.97);border-radius:18px;padding:12px;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+  body.sheet-open #routeCard{display:block}
+  body.sheet-open #searchBar, body.sheet-open #gpsBtn, body.sheet-open #routeBtn{display:none}
   #routeCard .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
   #routeCard .head b{font-size:15px}
-  #gearBtn{background:#222;border:1px solid #444;color:#fff;border-radius:10px;padding:6px 10px;font-size:16px;cursor:pointer}
+  #routeCard .head .hbtns{display:flex;gap:8px}
+  #routeCard .head button{background:#222;border:1px solid #444;color:#fff;border-radius:10px;padding:6px 10px;font-size:16px;cursor:pointer}
   .frow{display:flex;gap:8px;align-items:center;margin-bottom:8px;position:relative}
-  .frow:last-child{margin-bottom:0}
+  .frow:last-of-type{margin-bottom:10px}
   .dot{width:12px;height:12px;border-radius:50%;flex:none}
   .dot.o{background:#2ecc71}.dot.d{background:#e5484d}
   .frow input{flex:1;background:#1c1c1c;border:1px solid #333;color:#fff;border-radius:12px;padding:11px 12px;font-size:15px;font-family:inherit;outline:none}
   .frow input:focus{border-color:#00e5ff}
   #swapBtn{background:#222;border:1px solid #444;color:#fff;border-radius:12px;padding:10px 12px;font-size:16px;cursor:pointer}
-  .sugg{position:absolute;top:100%;right:0;left:0;background:#1c1c1c;border:1px solid #333;border-radius:12px;margin-top:4px;z-index:60;max-height:220px;overflow:auto;display:none}
+  .sugg{position:absolute;top:100%;right:0;left:0;background:#1c1c1c;border:1px solid #333;border-radius:12px;margin-top:4px;z-index:60;max-height:200px;overflow:auto;display:none}
   .sugg div{padding:11px 12px;border-bottom:1px solid #2a2a2a;cursor:pointer;font-size:14px}
   .sugg div:last-child{border-bottom:none}
   .sugg div:active{background:#00e5ff;color:#000}
-  /* دکمه‌ی شروع پایین صفحه، مثل نشان */
-  #startBar{bottom:12px;right:12px;left:12px}
-  #startBar button{width:100%;border:none;border-radius:16px;padding:16px;font-size:18px;font-weight:bold;font-family:inherit;cursor:pointer;background:#00e5ff;color:#000}
-  /* دکمه‌ی شناور موقعیت، روی نقشه */
-  #gpsBtn{left:12px;bottom:84px;width:52px;height:52px;border-radius:50%;border:none;background:#fff;color:#000;font-size:22px;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,.5)}
+  #startBtn{width:100%;border:none;border-radius:16px;padding:16px;font-size:18px;font-weight:bold;font-family:inherit;cursor:pointer;background:#00e5ff;color:#000}
   /* نوار اطلاعات مسیر در حالت ناوبری (داخل آینه) */
   #navInfo{display:none;position:absolute;top:12px;right:12px;left:12px;background:rgba(0,0,0,.78);border-radius:14px;padding:10px 12px;font-size:14px;gap:12px;z-index:10}
   #navInfo b{color:#00e5ff}
@@ -53,14 +59,14 @@
   .btn-cyan{background:#00e5ff;color:#000}
   .btn-dark{background:#222;color:#fff;border:1px solid #444}
   .btn-red{background:#e5484d;color:#fff}
-  body.nav-mode #routeCard, body.nav-mode #startBar, body.nav-mode #gpsBtn{display:none}
+  body.nav-mode #routeCard, body.nav-mode #searchBar, body.nav-mode #gpsBtn, body.nav-mode #routeBtn{display:none !important}
   body.nav-mode #navInfo{display:flex}
   body.nav-mode #dock{display:flex}
   body.hud-mode #navInfo{display:none !important}
   body.hud-mode #hudBar{display:block}
   #mirrorHint{display:none;position:absolute;bottom:76px;right:12px;left:12px;text-align:center;font-size:12px;color:#ffb020;z-index:2000;background:rgba(0,0,0,.6);border-radius:10px;padding:6px}
   #mirrorHint.on{display:block}
-  /* پیام کوتاه محو‌شونده، به‌جای متن زرد دائمی */
+  /* پیام کوتاه محو‌شونده */
   #toast{display:none;position:absolute;top:50%;right:24px;left:24px;transform:translateY(-50%);background:rgba(20,20,20,.95);border:1px solid #444;border-radius:14px;padding:14px;text-align:center;font-size:14px;line-height:1.9;z-index:3000}
   /* پنجره‌ی تنظیمات: فقط با چرخ‌دنده باز می‌شود */
   #settingsSheet{display:none;position:absolute;bottom:12px;right:12px;left:12px;background:#111;border:1px solid #333;border-radius:18px;padding:14px;z-index:2500}
@@ -85,8 +91,12 @@
     </div>
   </div>
 
+  <div class="ui" id="searchBar"><span>🔍</span><b>کجا می‌خوای بری؟</b></div>
+  <button class="ui fab" id="gpsBtn" title="موقعیت من">📍</button>
+  <button class="ui fab" id="routeBtn" title="مسیریابی">🧭</button>
+
   <div class="ui" id="routeCard">
-    <div class="head"><b>نقشه شیشه</b><button id="gearBtn">⚙️</button></div>
+    <div class="head"><b>مسیریابی</b><span class="hbtns"><button id="gearBtn">⚙️</button><button id="closeSheetBtn">✕</button></span></div>
     <div class="frow">
       <span class="dot o"></span>
       <input id="originInput" placeholder="مبدا" autocomplete="off">
@@ -98,11 +108,8 @@
       <input id="destInput" placeholder="مقصد کجاست؟" autocomplete="off">
       <div class="sugg" id="destSugg"></div>
     </div>
+    <button id="startBtn">شروع ▶</button>
   </div>
-
-  <button class="ui" id="gpsBtn" title="موقعیت من">📍</button>
-
-  <div class="ui" id="startBar"><button id="startBtn">شروع ▶</button></div>
 
   <div class="ui" id="dock">
     <button class="btn btn-cyan" id="hudBtn">HUD</button>
@@ -218,10 +225,21 @@ function bindSearch(inputEl, suggEl, kind){
 bindSearch($('originInput'), $('originSugg'), 'origin');
 bindSearch($('destInput'), $('destSugg'), 'dest');
 
-/* ضربه روی نقشه در حالت برنامه‌ریزی = مقصد (مثل نشان) */
+/* شیت مسیر */
+function openSheet(focusDest){
+  document.body.classList.add('sheet-open');
+  if (focusDest) setTimeout(function(){ $('destInput').focus(); }, 50);
+}
+function closeSheet(){ document.body.classList.remove('sheet-open'); }
+$('searchBar').addEventListener('click', function(){ openSheet(true); });
+$('routeBtn').addEventListener('click', function(){ openSheet(false); });
+$('closeSheetBtn').addEventListener('click', closeSheet);
+
+/* ضربه روی نقشه = مقصد، و شیت باز می‌شود */
 map.on('click', function(e){
   if (state.mirrored || state.navMode) return;
   setPoint('dest', e.latlng.lat, e.latlng.lng, 'نقطه روی نقشه');
+  openSheet(false);
 });
 
 function locateOnce(){
@@ -254,7 +272,7 @@ $('swapBtn').addEventListener('click', function(){
   $('destInput').value = state.dest ? (state.dest.name || '') : '';
 });
 
-/* تنظیمات: فقط با چرخ‌دنده */
+/* تنظیمات: فقط با چرخ‌دنده داخل شیت */
 $('gearBtn').addEventListener('click', function(){ $('settingsSheet').style.display = 'block'; });
 $('closeSettings').addEventListener('click', function(){ $('settingsSheet').style.display = 'none'; });
 $('lightMapToggle').addEventListener('change', function(e){
@@ -394,6 +412,7 @@ document.addEventListener('visibilitychange', function(){
 function startNav(){
   if (!state.origin){ showToast('اول مبدا را مشخص کن (موقعیت من یا جست‌وجو).'); return; }
   if (!state.dest){ showToast('اول مقصد را مشخص کن (جست‌وجو یا ضربه روی نقشه).'); return; }
+  closeSheet();
   showToast('در حال گرفتن مسیر…', 6000);
   fetchRoute(state.origin, state.dest).then(function(res){
     drawRoute(res);
@@ -421,6 +440,7 @@ function startNav(){
 function endNav(){
   document.body.classList.remove('nav-mode');
   document.body.classList.remove('hud-mode');
+  closeSheet();
   state.navMode = false; state.hudMode = false;
   $('hudBtn').textContent = 'HUD';
   if (state.watchId != null){ navigator.geolocation.clearWatch(state.watchId); state.watchId = null; }
