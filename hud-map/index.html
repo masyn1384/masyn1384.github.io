@@ -160,8 +160,11 @@ loadScript('https://static.neshan.org/sdk/leaflet/v1.9.4/neshan-sdk/v1.0.8/index
   });
 });
 function initApp(){
+/* کلید نقشه‌ی وب نشان که صاحب برنامه، مثل کلید مسیریابی و با همان آگاهی از ریسک عمومی‌شدن،
+   گذاشتن مستقیم آن را در کد تأیید کرده است. قفل دامنه در پنل نشان روی همین سایت تنظیم شده است. */
+var BUILTIN_NESHAN_MAP_KEY = 'web.292eb260630440859776333b3d9f72a1';
 var storedMapKey = '';
-try { storedMapKey = localStorage.getItem('neshan_map_key') || ''; } catch(e){}
+try { storedMapKey = localStorage.getItem('neshan_map_key') || BUILTIN_NESHAN_MAP_KEY; } catch(e){ storedMapKey = BUILTIN_NESHAN_MAP_KEY; }
 var map;
 if (storedMapKey && window.__neshanSdk){
   /* نقشه‌ی نشان با استایل تیره‌ی dreamy و لایه‌ی ترافیک */
