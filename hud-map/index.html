@@ -56,7 +56,7 @@ button,input{font:inherit}button{cursor:pointer}
 .sum{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .eyebrow{font-size:10px;color:#7f9bb2;letter-spacing:1.5px}
 #sT{font-size:29px;font-weight:800;color:var(--b);line-height:1.2}#sD{font-size:12px;color:var(--mut);margin-top:2px}
-.actions{display:grid;grid-template-columns:1fr auto auto;gap:9px}
+.actions{display:grid;grid-template-columns:1fr auto;gap:9px}
 .pbtn{border:0;border-radius:15px;padding:13px 18px;background:linear-gradient(135deg,#26caff,#087cff);color:#03111d;font-weight:800;font-size:14px;box-shadow:0 8px 24px #078cff40}
 .sbtn{border:1px solid var(--line);border-radius:15px;padding:12px 14px;background:#ffffff08;color:#d8edfa;font-size:12.5px}
 
@@ -101,6 +101,9 @@ body.nav #banner,body.nav #bar{display:flex}
 .hBtns{display:flex;gap:8px}
 .hBtns button{border:1px solid #19bfff55;background:rgba(3,12,22,.88);color:#e8f8ff;border-radius:2vmin;padding:1.6vmin 2.4vmin;font-size:clamp(11px,2.6vmin,15px);backdrop-filter:blur(12px)}
 .hBtns .loc{color:var(--b)}#hudClose{border-color:#ff536455;color:#ff8791}
+#hudView{position:absolute;inset:0}#hudView.mirror{transform:scaleX(-1)}
+#hudMirror{opacity:.4;border-color:#19bfff2e}#hudMirror.on{opacity:1;border-color:#19bfff88}
+#recenterBtn{position:absolute;z-index:6;right:50%;transform:translateX(50%);bottom:calc(env(safe-area-inset-bottom,0px) + 98px);padding:11px 18px;border-radius:16px;display:none;color:#e8f8ff;font-size:13px;font-weight:700;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -121,13 +124,14 @@ body.nav #banner,body.nav #bar{display:flex}
 
 <div id="sheet" class="glass">
   <div class="sum"><div><div class="eyebrow">زمان تقریبی رسیدن</div><div id="sT">—</div><div id="sD">—</div></div><div style="color:var(--b);font-size:26px">⌁</div></div>
-  <div class="actions"><button class="pbtn" id="go">شروع مسیریابی</button><button class="sbtn" id="simB">شبیه‌سازی</button><button class="sbtn" id="clearRoute">حذف</button></div>
+  <div class="actions"><button class="pbtn" id="go">شروع مسیریابی</button><button class="sbtn" id="clearRoute">حذف</button></div>
 </div>
 
 <div id="bar" class="glass"><div><div id="eta">—</div><small id="rem">—</small></div><div class="controls"><button id="vB" title="صدا">🔊</button><button id="hB" title="HUD">HUD</button><button class="stop" id="xB" title="پایان">×</button></div></div>
+<button id="recenterBtn" class="glass">🧭 برگشت به رانندگی</button>
 <div id="toast"></div>
 
-<div id="hud">
+<div id="hud"><div id="hudView">
   <div id="hudMap"></div><div id="hudShade"></div>
   <div id="hudCmp"></div>
   <div class="hTop">
@@ -135,9 +139,9 @@ body.nav #banner,body.nav #bar{display:flex}
     <div class="hSpeed"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="43" fill="none" stroke="#19bfff25" stroke-width="5" stroke-dasharray="202 270" stroke-linecap="round"/><circle id="ring" cx="50" cy="50" r="43" fill="none" stroke="#19bfff" stroke-width="5" stroke-dasharray="0 270" stroke-linecap="round" style="filter:drop-shadow(0 0 5px #19bfff)"/></svg><div><div id="hS">۰</div><div class="unit">km/h</div></div></div>
   </div>
   <div id="hudCar"><svg viewBox="0 0 48 48"><defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9eeaff"/><stop offset=".6" stop-color="#19bfff"/><stop offset="1" stop-color="#087cff"/></linearGradient></defs><path d="M24 3l17 40-17-10L7 43z" fill="url(#cg)" stroke="#e6f8ff" stroke-width="2" stroke-linejoin="round"/></svg></div>
-  <div class="hBot">
+  </div><div class="hBot">
     <div class="chips"><div class="chip" id="hEta">—</div><div class="chip" id="hRem">—</div><div class="chip" id="hStat" style="color:#8fb2c9">GPS</div></div>
-    <div class="hBtns"><button class="loc" id="hudLocate">◎ مکان من</button><button id="hudClose">خروج از HUD</button></div>
+    <div class="hBtns"><button class="loc" id="hudLocate">◎ مکان من</button><button id="hudMirror">آینه</button><button id="hudClose">خروج از HUD</button></div>
   </div>
 </div>
 
@@ -146,7 +150,7 @@ const CFG={MAP_KEY:'web.292eb260630440859776333b3d9f72a1',SERVICE_KEY:'service.3
 const $=s=>document.querySelector(s),fa=x=>String(x).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]).replace('.','٫');
 const rad=Math.PI/180,R=6371000;
 let map,hudMap,meMk,orgMk,dstMk,route=null,origin=null,dst=null,gps=null,cp=null;
-let navOn=false,hudOpen=false,wid=null,sim=null,simD=0,muted=false,idx=0,off=0,spoken={},hd=0,spd=0,wake=null,active='d',rerouting=false;
+let navOn=false,hudOpen=false,wid=null,muted=false,idx=0,off=0,spoken={},hd=0,spd=0,wake=null,active='d',rerouting=false,follow=true;
 
 const hav=(a,b)=>{const x=Math.sin((b[1]-a[1])*rad/2)**2+Math.cos(a[1]*rad)*Math.cos(b[1]*rad)*Math.sin((b[0]-a[0])*rad/2)**2;return 2*R*Math.asin(Math.sqrt(x))};
 const brg=(a,b)=>{const dl=(b[0]-a[0])*rad,y=Math.sin(dl)*Math.cos(b[1]*rad),x=Math.cos(a[1]*rad)*Math.sin(b[1]*rad)-Math.sin(a[1]*rad)*Math.cos(b[1]*rad)*Math.cos(dl);return(Math.atan2(y,x)/rad+360)%360};
@@ -167,7 +171,12 @@ function mkMap(container,extra){return new nmp_mapboxgl.Map(Object.assign({mapTy
 function marker(cls){const el=document.createElement('div');el.className=cls;return new nmp_mapboxgl.Marker({element:el})}
 function showMe(c){if(!meMk)meMk=marker('marker-me');meMk.setLngLat(c).addTo(map);meMk.getElement().classList.toggle('nav',navOn)}
 function whenReady(m,fn){const go=()=>{try{fn()}catch(e){m.once('idle',go)}};go()}
-try{map=mkMap('map',{pitch:0});map.on('click',e=>pick([e.lngLat.lng,e.lngLat.lat]));map.on('rotate',()=>setCompass(map.getBearing()))}catch(e){toast('بارگذاری نقشه ناموفق بود')}
+try{map=mkMap('map',{pitch:0});map.on('click',e=>pick([e.lngLat.lng,e.lngLat.lat]));map.on('rotate',()=>setCompass(map.getBearing()));map.on('dragstart',unfollow);map.on('touchstart',e=>{if(e.points&&e.points.length>1)unfollow()});map.getCanvas().addEventListener('wheel',unfollow,{passive:true})}catch(e){toast('بارگذاری نقشه ناموفق بود')}
+try{const st=JSON.parse(localStorage.getItem('hudmap-state')||'null');
+if(st&&st.pts&&st.pts.length>1&&Date.now()-st.t<86400000){origin=st.o;dst=st.d;
+if(origin){if(!orgMk)orgMk=marker('marker-org');orgMk.setLngLat(origin).addTo(map);$('#qo').value='مبدا ذخیره‌شده'}
+if(dst){if(!dstMk)dstMk=marker('marker-dest');dstMk.setLngLat(dst).addTo(map);$('#qd').value='مقصد ذخیره‌شده'}
+build({pts:st.pts,dur:st.dur,steps:st.steps});if(st.nav)startNav()}else if(st)clearState()}catch(e){}
 
 /* ---------- Route layers ---------- */
 function drawRoute(m,pre,coords){const gj={type:'Feature',geometry:{type:'LineString',coordinates:coords}};const s=m.getSource(pre+'route');if(s){s.setData(gj);return}
@@ -203,28 +212,31 @@ bindSearch($('#qo'),'o');bindSearch($('#qd'),'d');
 async function fetchRoute(o,d){const r=await fetch('https://api.neshan.org/v4/direction?type=car&origin='+o[1]+','+o[0]+'&destination='+d[1]+','+d[0],{headers:{'Api-Key':CFG.SERVICE_KEY}});if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();if(!j.routes||!j.routes[0])throw new Error('No route');const rt=j.routes[0],L=rt.legs[0];return{pts:dec(rt.overview_polyline.points),dur:L.duration.value,steps:L.steps}}
 async function requestRoute(o,d){toast('در حال محاسبه مسیر…');try{build(await fetchRoute(o,d))}catch(e){console.error(e);toast('مسیر دریافت نشد؛ اتصال، مجوز کلید API یا CORS را بررسی کنید')}}
 function near(pts,p,a,b){let bi=a,bd=1e18;for(let i=a;i<Math.min(pts.length,b);i++){const d=(pts[i][0]-p[0])**2+(pts[i][1]-p[1])**2;if(d<bd){bd=d;bi=i}}return bi}
+function saveState(){try{if(route)localStorage.setItem('hudmap-state',JSON.stringify({t:Date.now(),o:origin,d:dst,pts:route.pts,dur:route.dur,steps:route.steps,nav:navOn}))}catch(e){}}
+function clearState(){try{localStorage.removeItem('hudmap-state')}catch(e){}}
 function build(o,opt){opt=opt||{};if(!o.pts||o.pts.length<2||!o.steps){toast('اطلاعات مسیر ناقص است');return}
  const pts=o.pts,cum=[0];for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+hav(pts[i-1],pts[i]));
  const steps=o.steps.map(s=>{const l=s.start_location,sl=Array.isArray(l)?l:[l.x??l.lng,l.y??l.lat];return{...s,i:near(pts,sl,0,pts.length)}});
- route={pts,cum,steps,total:cum[cum.length-1],dur:o.dur||cum[cum.length-1]/11};idx=0;off=0;spoken={};
+ route={pts,cum,steps,total:cum[cum.length-1],dur:o.dur||cum[cum.length-1]/11};idx=0;off=0;spoken={};saveState();
  whenReady(map,()=>drawRoute(map,'main',pts));if(hudMap)whenReady(hudMap,()=>drawRoute(hudMap,'hud',pts));
  if(opt.keep)return;
  const b=new nmp_mapboxgl.LngLatBounds();pts.forEach(p=>b.extend(p));map.fitBounds(b,{padding:{top:170,bottom:210,left:45,right:45}});
  $('#sT').textContent=fm(route.dur);$('#sD').textContent=fd(route.total);$('#sheet').classList.add('show')}
-function dropRoute(){route=null;removeRoute(map,'main');removeRoute(hudMap,'hud');$('#sheet').classList.remove('show')}
+function dropRoute(){route=null;removeRoute(map,'main');removeRoute(hudMap,'hud');$('#sheet').classList.remove('show');clearState()}
 function clearRoute(){if(navOn)stopNav();dst=null;$('#qd').value='';$('#res').innerHTML='';if(dstMk){dstMk.remove();dstMk=null}dropRoute()}
 async function reroute(p){if(rerouting||!dst)return;rerouting=true;toast('در حال محاسبهٔ مسیر جدید…');try{build(await fetchRoute(p,dst),{keep:true});say('مسیر جدید محاسبه شد')}catch(e){toast('مسیر جدید دریافت نشد')}rerouting=false}
 
 /* ---------- Navigation ---------- */
+function unfollow(){if(navOn&&follow){follow=false;$('#recenterBtn').style.display='block'}}
+function refollow(){if(!navOn)return;follow=true;$('#recenterBtn').style.display='none';if(cp)map.easeTo({center:cp,bearing:hd,zoom:17,pitch:58,duration:700,offset:[0,map.getContainer().clientHeight*.2]})}
 function say(t){if(muted||!window.speechSynthesis)return;const u=new SpeechSynthesisUtterance(t);u.lang='fa-IR';speechSynthesis.cancel();speechSynthesis.speak(u)}
-async function startNav(simulate){if(!route)return;navOn=true;idx=0;off=0;spoken={};document.body.classList.add('nav');
+async function startNav(){if(!route)return;navOn=true;idx=0;off=0;spoken={};document.body.classList.add('nav');follow=true;$('#recenterBtn').style.display='none';saveState();
  try{if(navigator.wakeLock)wake=await navigator.wakeLock.request('screen')}catch(e){}
  const start=route.pts[0];cp=start;hd=brg(start,route.pts[Math.min(route.pts.length-1,5)]);showMe(start);
  map.easeTo({center:start,bearing:hd,zoom:17,pitch:58,duration:900,offset:[0,map.getContainer().clientHeight*.2]});
- if(simulate){simD=0;clearInterval(sim);sim=setInterval(simTick,1000);simTick();toast('حالت شبیه‌ساز فعال است')}
- else{if(!navigator.geolocation){toast('مرورگر از GPS پشتیبانی نمی‌کند');return}toast('در انتظار سیگنال GPS…');wid=navigator.geolocation.watchPosition(p=>fix([p.coords.longitude,p.coords.latitude],(p.coords.speed||0)*3.6,p.coords.heading),()=>toast('دسترسی به GPS قطع شد'),{enableHighAccuracy:true,maximumAge:500,timeout:10000})}
+ if(!navigator.geolocation){toast('مرورگر از GPS پشتیبانی نمی‌کند');return}toast('در انتظار سیگنال GPS…');wid=navigator.geolocation.watchPosition(p=>fix([p.coords.longitude,p.coords.latitude],(p.coords.speed||0)*3.6,p.coords.heading),()=>toast('دسترسی به GPS قطع شد'),{enableHighAccuracy:true,maximumAge:500,timeout:10000})
  say('مسیریابی آغاز شد')}
-function simTick(){if(!route)return;simD+=16;const pts=route.pts,cum=route.cum;if(simD>=route.total-5){fix(pts[pts.length-1],0,null);return}let i=idx;while(i<pts.length-1&&cum[i]<simD)i++;fix(pts[i],58,null)}
+
 function fix(raw,sp,h){if(!route||!navOn)return;gps=raw;spd=sp||0;const pts=route.pts,cum=route.cum;
  idx=near(pts,raw,idx,idx+300);const dO=hav(raw,pts[idx]);
  if(dO>70){if(++off>3){off=0;reroute(raw)}}else off=0;
@@ -244,35 +256,35 @@ function fix(raw,sp,h){if(!route||!navOn)return;gps=raw;spd=sp||0;const pts=rout
  [[500,'۵۰۰'],[150,'۱۵۰']].forEach(([m,l])=>{const k=nx.i+'_'+m;if(dn<m&&!spoken[k]){spoken[k]=1;say('تا '+l+' متر دیگر، '+txt)}});
  const rest=[p].concat(pts.slice(idx+1));
  if(hudOpen&&hudMap){try{const s=hudMap.getSource('hudroute');s&&s.setData({type:'Feature',geometry:{type:'LineString',coordinates:rest}})}catch(e){}
-  hudMap.easeTo({center:p,bearing:hd,zoom:17,pitch:50,duration:900,easing:t=>t,offset:[0,hudOff()]})}
+  hudMap.easeTo({center:p,bearing:hd,zoom:18,pitch:50,duration:900,easing:t=>t,offset:[0,hudOff()]})}
  else{showMe(p);try{const s=map.getSource('mainroute');s&&s.setData({type:'Feature',geometry:{type:'LineString',coordinates:rest}})}catch(e){}
-  map.easeTo({center:p,bearing:hd,zoom:17,pitch:58,duration:900,easing:t=>t,offset:[0,map.getContainer().clientHeight*.2]})}}
-function stopNav(){navOn=false;clearInterval(sim);sim=null;if(wid!=null){navigator.geolocation.clearWatch(wid);wid=null}if(wake){wake.release().catch(()=>{});wake=null}if(window.speechSynthesis)speechSynthesis.cancel();
+  if(follow)map.easeTo({center:p,bearing:hd,zoom:17,pitch:58,duration:900,easing:t=>t,offset:[0,map.getContainer().clientHeight*.2]})}}
+function stopNav(){navOn=false;follow=true;$('#recenterBtn').style.display='none';if(wid!=null){navigator.geolocation.clearWatch(wid);wid=null}if(wake){wake.release().catch(()=>{});wake=null}if(window.speechSynthesis)speechSynthesis.cancel();
  hud(false);document.body.classList.remove('nav');if(meMk)meMk.getElement().classList.remove('nav');
- if(route)whenReady(map,()=>drawRoute(map,'main',route.pts));map.easeTo({pitch:0,bearing:0,zoom:14,duration:600});if(route)$('#sheet').classList.add('show')}
+ if(route)whenReady(map,()=>drawRoute(map,'main',route.pts));map.easeTo({pitch:0,bearing:0,zoom:14,duration:600});if(route)$('#sheet').classList.add('show');saveState()}
 
 /* ---------- HUD: always landscape ---------- */
 function hudOff(){return hudMap?hudMap.getContainer().clientHeight*.25:0}
 function hudFit(){const h=$('#hud');if(innerHeight>innerWidth){h.style.inset='auto';h.style.top='0';h.style.left='0';h.style.width=innerHeight+'px';h.style.height=innerWidth+'px';h.style.transformOrigin='0 0';h.style.transform='translateX('+innerWidth+'px) rotate(90deg)'}
  else{h.style.inset='0';h.style.width=h.style.height=h.style.transform=h.style.transformOrigin=h.style.top=h.style.left=''}
- setTimeout(()=>{if(hudMap){hudMap.resize();if(cp)hudMap.easeTo({center:cp,bearing:hd,zoom:17,pitch:50,duration:0,offset:[0,hudOff()]})}},80)}
+ setTimeout(()=>{if(hudMap){hudMap.resize();if(cp)hudMap.easeTo({center:cp,bearing:hd,zoom:18,pitch:50,duration:0,offset:[0,hudOff()]})}},80)}
 function hud(on){const el=$('#hud');
- if(!on){if(!hudOpen)return;hudOpen=false;el.style.display='none';try{if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});if(screen.orientation&&screen.orientation.unlock)screen.orientation.unlock()}catch(e){}
+ if(!on){if(!hudOpen)return;hudOpen=false;el.style.display='none';$('#hudView').classList.remove('mirror');const mb=$('#hudMirror');mb.classList.remove('on');mb.textContent='آینه';try{if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});if(screen.orientation&&screen.orientation.unlock)screen.orientation.unlock()}catch(e){}
   if(navOn&&cp){showMe(cp);map.jumpTo({center:cp,bearing:hd,zoom:17,pitch:58})}return}
  if(!route){toast('ابتدا یک مسیر انتخاب کنید');return}
  hudOpen=true;el.style.display='block';hudFit();
  if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().then(()=>{try{return screen.orientation.lock('landscape')}catch(e){}}).catch(()=>{});
  requestAnimationFrame(()=>{const c=cp||route.pts[0];
-  if(!hudMap){try{hudMap=mkMap('hudMap',{zoom:17,pitch:50,bearing:hd,center:c,interactive:false});
+  if(!hudMap){try{hudMap=mkMap('hudMap',{zoom:18,pitch:50,bearing:hd,center:c,interactive:false});
    hudMap.on('rotate',()=>setCompass(hudMap.getBearing()));
-   hudMap.once('load',()=>{dimHud();drawRoute(hudMap,'hud',route?route.pts:[]);hudMap.once('idle',dimHud);hudMap.easeTo({center:cp||c,bearing:hd,zoom:17,pitch:50,duration:0,offset:[0,hudOff()]})})}catch(e){toast('ساخت نقشهٔ HUD ناموفق بود')}}
-  else{hudMap.resize();whenReady(hudMap,()=>drawRoute(hudMap,'hud',route.pts));hudMap.easeTo({center:c,bearing:hd,zoom:17,pitch:50,duration:0,offset:[0,hudOff()]})}})}
-$('#hudLocate').onclick=()=>getPos(c=>{gps=c;if(!navOn||!cp)cp=c;if(hudMap)hudMap.easeTo({center:cp,bearing:hd,zoom:17,pitch:50,duration:700,offset:[0,hudOff()]});toast('موقعیت شما پیدا شد')});
+   hudMap.once('load',()=>{dimHud();drawRoute(hudMap,'hud',route?route.pts:[]);hudMap.once('idle',dimHud);hudMap.easeTo({center:cp||c,bearing:hd,zoom:18,pitch:50,duration:0,offset:[0,hudOff()]})})}catch(e){toast('ساخت نقشهٔ HUD ناموفق بود')}}
+  else{hudMap.resize();whenReady(hudMap,()=>drawRoute(hudMap,'hud',route.pts));hudMap.easeTo({center:c,bearing:hd,zoom:18,pitch:50,duration:0,offset:[0,hudOff()]})}})}
+$('#hudLocate').onclick=()=>getPos(c=>{gps=c;if(!navOn||!cp)cp=c;if(hudMap)hudMap.easeTo({center:cp,bearing:hd,zoom:18,pitch:50,duration:700,offset:[0,hudOff()]});toast('موقعیت شما پیدا شد')});
 
 /* ---------- Buttons ---------- */
-$('#go').onclick=()=>startNav(false);$('#simB').onclick=()=>startNav(true);$('#xB').onclick=stopNav;$('#hB').onclick=()=>hud(true);$('#hudClose').onclick=()=>hud(false);$('#clearRoute').onclick=clearRoute;
+$('#go').onclick=()=>startNav();$('#recenterBtn').onclick=refollow;$('#xB').onclick=stopNav;$('#hB').onclick=()=>hud(true);$('#hudClose').onclick=()=>hud(false);$('#hudMirror').onclick=()=>{const f=$('#hudView').classList.toggle('mirror');const b=$('#hudMirror');b.classList.toggle('on',f);b.textContent=f?'آینه ✓':'آینه'};$('#clearRoute').onclick=clearRoute;
 $('#vB').onclick=e=>{muted=!muted;e.currentTarget.textContent=muted?'🔇':'🔊';toast(muted?'راهنمای صوتی خاموش شد':'راهنمای صوتی روشن شد')};
-addEventListener('resize',()=>{if(hudOpen)hudFit();else if(hudMap)hudMap.resize()});addEventListener('orientationchange',()=>setTimeout(()=>{if(hudOpen)hudFit()},200));
+addEventListener('pagehide',saveState);addEventListener('resize',()=>{if(hudOpen)hudFit();else if(hudMap)hudMap.resize()});addEventListener('orientationchange',()=>setTimeout(()=>{if(hudOpen)hudFit()},200));
 document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&hudOpen&&false)hud(false)});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&navOn&&hudMap)hudMap.resize()});
 mark();
