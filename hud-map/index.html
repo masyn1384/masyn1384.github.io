@@ -122,7 +122,7 @@
   <div id="toast"></div>
 
   <div id="settingsSheet">
-    <p>تنظیمات — مسیریابی پیش‌فرض با OpenStreetMap و بدون کلید انجام می‌شود. اگر کلید نشان داری، اینجا بذار تا مسیر با داده‌ی نشان حساب شود. کلید فقط روی همین گوشی ذخیره می‌شود.</p>
+    <p>تنظیمات — کلید نشان به‌صورت پیش‌فرض داخل برنامه هست و مسیر با داده‌ی نشان حساب می‌شود؛ اگر نشد، خودکار با OpenStreetMap جایگزین می‌شود. اگر خواستی کلید دیگری بذاری، اینجا عوضش کن (روی همین گوشی ذخیره می‌شود).</p>
     <input id="neshanKey" placeholder="Api-Key نشان (اختیاری)" autocomplete="off">
     <label><input type="checkbox" id="lightMapToggle"> نقشه روشن (به‌جای تیره)</label>
     <button id="closeSettings">بستن</button>
@@ -292,12 +292,15 @@ function decodePolyline(str){
   }
   return coords;
 }
+/* کلید نشان که صاحب برنامه با آگاهی از ریسک عمومی‌شدن، گذاشتن مستقیم آن را در کد تأیید کرده است.
+   قفل دامنه در پنل نشان روی همین سایت تنظیم شده است. */
+var BUILTIN_NESHAN_KEY = 'service.399ca876d2b84549b70a2043cb6bb583';
 function neshanKey(){
   var v = ($('neshanKey').value || '').trim();
   if (v){ try { localStorage.setItem('neshan_key', v); } catch(e){} return v; }
-  try { return localStorage.getItem('neshan_key') || ''; } catch(e){ return ''; }
+  try { return localStorage.getItem('neshan_key') || BUILTIN_NESHAN_KEY; } catch(e){ return BUILTIN_NESHAN_KEY; }
 }
-try { var saved = localStorage.getItem('neshan_key'); if (saved) $('neshanKey').value = saved; } catch(e){}
+try { var saved = localStorage.getItem('neshan_key'); $('neshanKey').value = saved || BUILTIN_NESHAN_KEY; } catch(e){ $('neshanKey').value = BUILTIN_NESHAN_KEY; }
 function routeWithOSRM(o, d){
   var url = 'https://routing.openstreetmap.de/routed-car/route/v1/driving/' +
     o.lon + ',' + o.lat + ';' + d.lon + ',' + d.lat +
