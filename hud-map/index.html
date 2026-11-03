@@ -24,10 +24,12 @@
   .ui{position:absolute;z-index:2000}
   /* نوار جست‌وجوی پایین صفحه، مثل صفحه‌ی اصلی نشان */
   #searchBar{bottom:12px;right:12px;left:12px;background:rgba(20,20,20,.95);border:1px solid #333;border-radius:16px;padding:15px 14px;font-size:16px;color:#ccc;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.5);display:flex;align-items:center;gap:8px}
-  #searchBar b{color:#fff;font-weight:normal}
+  #searchBar b{color:#fff;font-weight:normal;flex:1}
+  #searchBar .avatar{width:34px;height:34px;border-radius:50%;background:#333;display:flex;align-items:center;justify-content:center;font-size:18px;flex:none}
+  #searchBar .sicon{font-size:18px;flex:none}
   /* دکمه‌های شناور روی نقشه، مثل نشان */
   .fab{width:52px;height:52px;border-radius:50%;border:none;font-size:22px;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,.5)}
-  #gpsBtn{right:12px;bottom:84px;background:#fff;color:#000}
+  #gpsBtn{right:12px;bottom:84px;background:#222;color:#fff;border:1px solid #444}
   #routeBtn{right:12px;bottom:148px;background:#1a7cff;color:#fff}
   /* شیت مسیر: فقط وقتی جست‌وجو یا دکمه‌ی مسیریابی زده شود باز می‌شود */
   #routeCard{display:none;bottom:12px;right:12px;left:12px;background:rgba(13,13,13,.97);border-radius:18px;padding:12px;box-shadow:0 4px 20px rgba(0,0,0,.5)}
@@ -42,23 +44,23 @@
   .dot{width:12px;height:12px;border-radius:50%;flex:none}
   .dot.o{background:#2ecc71}.dot.d{background:#e5484d}
   .frow input{flex:1;background:#1c1c1c;border:1px solid #333;color:#fff;border-radius:12px;padding:11px 12px;font-size:15px;font-family:inherit;outline:none}
-  .frow input:focus{border-color:#00e5ff}
+  .frow input:focus{border-color:#1a7cff}
   #swapBtn{background:#222;border:1px solid #444;color:#fff;border-radius:12px;padding:10px 12px;font-size:16px;cursor:pointer}
   .sugg{position:absolute;top:100%;right:0;left:0;background:#1c1c1c;border:1px solid #333;border-radius:12px;margin-top:4px;z-index:60;max-height:200px;overflow:auto;display:none}
   .sugg div{padding:11px 12px;border-bottom:1px solid #2a2a2a;cursor:pointer;font-size:14px}
   .sugg div:last-child{border-bottom:none}
   .sugg div:active{background:#00e5ff;color:#000}
-  #startBtn{width:100%;border:none;border-radius:16px;padding:16px;font-size:18px;font-weight:bold;font-family:inherit;cursor:pointer;background:#00e5ff;color:#000}
+  #startBtn{width:100%;border:none;border-radius:16px;padding:16px;font-size:18px;font-weight:bold;font-family:inherit;cursor:pointer;background:#1a7cff;color:#fff}
   /* نوار اطلاعات مسیر در حالت ناوبری (داخل آینه) */
   #navInfo{display:none;position:absolute;top:12px;right:12px;left:12px;background:rgba(0,0,0,.78);border-radius:14px;padding:10px 12px;font-size:14px;gap:12px;z-index:10}
-  #navInfo b{color:#00e5ff}
+  #navInfo b{color:#1a7cff}
   #hudBar{display:none;position:absolute;top:12px;right:12px;left:12px;background:rgba(0,0,0,.8);border-radius:14px;padding:12px;text-align:center;z-index:10}
-  #hudBar .big{font-size:34px;font-weight:bold;color:#00e5ff;line-height:1.2}
+  #hudBar .big{font-size:34px;font-weight:bold;color:#1a7cff;line-height:1.2}
   #hudBar .small{font-size:14px;color:#ddd}
   /* دکمه‌های ناوبری پایین صفحه */
   #dock{display:none;bottom:12px;right:12px;left:12px;gap:8px}
   #dock .btn{flex:1;border:none;border-radius:14px;padding:14px 6px;font-size:14px;font-weight:bold;font-family:inherit;cursor:pointer}
-  .btn-cyan{background:#00e5ff;color:#000}
+  .btn-cyan{background:#1a7cff;color:#fff}
   .btn-dark{background:#222;color:#fff;border:1px solid #444}
   .btn-red{background:#e5484d;color:#fff}
   body.nav-mode #routeCard, body.nav-mode #searchBar, body.nav-mode #gpsBtn, body.nav-mode #routeBtn{display:none !important}
@@ -75,7 +77,7 @@
   #settingsSheet p{font-size:13px;color:#bbb;line-height:1.9;margin:0 0 8px}
   #settingsSheet input{width:100%;background:#1c1c1c;border:1px solid #333;color:#fff;border-radius:10px;padding:11px;font-family:inherit;direction:ltr;text-align:left;margin-bottom:8px}
   #settingsSheet label{font-size:13px;color:#ddd;display:block;margin-top:6px;cursor:pointer}
-  #closeSettings{margin-top:12px;width:100%;border:none;border-radius:12px;padding:12px;font-size:15px;font-weight:bold;font-family:inherit;cursor:pointer;background:#00e5ff;color:#000}
+  #closeSettings{margin-top:12px;width:100%;border:none;border-radius:12px;padding:12px;font-size:15px;font-weight:bold;font-family:inherit;cursor:pointer;background:#1a7cff;color:#fff}
 </style>
 </head>
 <body>
@@ -93,7 +95,7 @@
     </div>
   </div>
 
-  <div class="ui" id="searchBar"><span>🔍</span><b>کجا می‌خوای بری؟</b></div>
+  <div class="ui" id="searchBar"><span class="avatar">👤</span><b>کجا می‌خوای بری؟</b><span class="sicon">🔍</span></div>
   <button class="ui fab" id="gpsBtn" title="موقعیت من">📍</button>
   <button class="ui fab" id="routeBtn" title="مسیریابی">🧭</button>
 
@@ -407,7 +409,7 @@ function drawRoute(res){
   state.totalDist = res.dist; state.totalTime = res.time;
   state.maneuvers = res.maneuvers || [];
   state.casingLayer = L.polyline(latlngs, { color: '#ffffff', weight: 10, opacity: 0.9 }).addTo(map);
-  state.routeLayer = L.polyline(latlngs, { color: '#00e5ff', weight: 6, opacity: 1 }).addTo(map);
+  state.routeLayer = L.polyline(latlngs, { color: '#1a7cff', weight: 6, opacity: 1 }).addTo(map);
   map.fitBounds(state.routeLayer.getBounds(), { padding: [30, 30] });
   $('infoDist').textContent = fmtDist(res.dist);
   $('infoTime').textContent = fmtTime(res.time);
