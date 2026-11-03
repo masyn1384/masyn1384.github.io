@@ -1,650 +1,174 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="theme-color" content="#000000">
-<title>نقشه شیشه — HUD</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="https://static.neshan.org/sdk/leaflet/v1.9.4/neshan-sdk/v1.0.8/index.css">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#07080c">
+<title>مسیریاب HUD</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;500;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://static.neshan.org/sdk/mapboxgl/v1.13.2/neshan-sdk/v1.0.8/index.css">
+<script src="https://static.neshan.org/sdk/mapboxgl/v1.13.2/neshan-sdk/v1.0.8/index.js"></script>
 <style>
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0;height:100%;background:#000;color:#fff;font-family:Tahoma,'Segoe UI',sans-serif;overflow:hidden}
-  #app{position:relative;width:100%;height:100%}
-  /* همان چیزی که در حالت آینه برعکس می‌شود: فقط نقشه و نوار اطلاعات مسیر.
-     دکمه‌ها بیرون آن می‌مانند تا همیشه قابل لمس باشند. */
-  #mirrorWrap{position:absolute;inset:0;transition:transform .15s}
-  #mirrorWrap.mirrored{transform:scaleX(-1)}
-  #map{position:absolute;inset:0;background:#000}
-  .leaflet-container{background:#000;font-family:Tahoma,sans-serif}
-  /* نقشه‌ی تیره بدون نیاز به کلید: فقط در حالت OSM، تایل روشن با فیلتر وارونه می‌شود.
-     نقشه‌ی نشان (dreamy) خودش تیره است و فیلتر نمی‌خواهد. */
-  body.osm-map .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightness(.92) contrast(.92)}
-  body.osm-map.light-map .leaflet-tile-pane{filter:none}
-  body.nav-mode.osm-map .leaflet-tile-pane, body.nav-mode.osm-map.light-map .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightness(.92) contrast(.92)}
-  .ui{position:absolute;z-index:2000}
-  /* نوار جست‌وجوی پایین صفحه، مثل صفحه‌ی اصلی نشان */
-  #searchBar{bottom:12px;right:12px;left:12px;background:rgba(18,18,18,.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:16px 14px;font-size:16px;color:#ccc;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.5);display:flex;align-items:center;gap:8px}
-  #searchBar b{color:#fff;font-weight:normal;flex:1}
-  #searchBar .avatar{width:34px;height:34px;border-radius:50%;background:#333;display:flex;align-items:center;justify-content:center;font-size:18px;flex:none}
-  #searchBar .sicon{font-size:18px;flex:none}
-  /* دکمه‌های شناور روی نقشه، مثل نشان */
-  .fab{width:52px;height:52px;border-radius:50%;border:none;font-size:22px;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,.5)}
-  #gpsBtn{right:12px;bottom:84px;background:#222;color:#fff;border:1px solid #444}
-  #routeBtn{right:12px;bottom:148px;background:#1a7cff;color:#fff}
-  /* شیت مسیر: فقط وقتی جست‌وجو یا دکمه‌ی مسیریابی زده شود باز می‌شود */
-  #routeCard{display:none;bottom:12px;right:12px;left:12px;background:rgba(13,13,13,.97);border-radius:18px;padding:12px;box-shadow:0 4px 20px rgba(0,0,0,.5)}
-  body.sheet-open #routeCard{display:block}
-  body.sheet-open #searchBar, body.sheet-open #gpsBtn, body.sheet-open #routeBtn{display:none}
-  #routeCard .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-  #routeCard .head b{font-size:15px}
-  #routeCard .head .hbtns{display:flex;gap:8px}
-  #routeCard .head button{background:#222;border:1px solid #444;color:#fff;border-radius:10px;padding:6px 10px;font-size:16px;cursor:pointer}
-  .frow{display:flex;gap:8px;align-items:center;margin-bottom:8px;position:relative}
-  .frow:last-of-type{margin-bottom:10px}
-  .dot{width:12px;height:12px;border-radius:50%;flex:none}
-  .dot.o{background:#2ecc71}.dot.d{background:#e5484d}
-  .frow input{flex:1;background:#1c1c1c;border:1px solid #333;color:#fff;border-radius:12px;padding:11px 12px;font-size:15px;font-family:inherit;outline:none}
-  .frow input:focus{border-color:#1a7cff}
-  #swapBtn{background:#222;border:1px solid #444;color:#fff;border-radius:12px;padding:10px 12px;font-size:16px;cursor:pointer}
-  .sugg{position:absolute;top:100%;right:0;left:0;background:#1c1c1c;border:1px solid #333;border-radius:12px;margin-top:4px;z-index:60;max-height:200px;overflow:auto;display:none}
-  .sugg div{padding:11px 12px;border-bottom:1px solid #2a2a2a;cursor:pointer;font-size:14px}
-  .sugg div:last-child{border-bottom:none}
-  .sugg div:active{background:#1a7cff;color:#fff}
-  #startBtn{width:100%;border:none;border-radius:18px;padding:16px;font-size:18px;font-weight:bold;font-family:inherit;cursor:pointer;background:linear-gradient(135deg,#2f8bff,#0057d9);color:#fff;box-shadow:0 8px 20px rgba(26,124,255,.35)}
-  /* نوار اطلاعات مسیر در حالت ناوبری (داخل آینه) */
-  #navInfo{display:none;position:absolute;top:12px;right:12px;left:12px;background:rgba(12,12,12,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:14px 16px;font-size:14px;z-index:10;box-shadow:0 10px 30px rgba(0,0,0,.5);flex-direction:column;gap:10px}
-  #navInfo .turnRow{display:flex;gap:12px;align-items:center}
-  #navInfo .turnArrow{width:52px;height:52px;flex:none;border-radius:50%;background:rgba(26,124,255,.18);border:1px solid rgba(26,124,255,.45);color:#fff;font-size:30px;display:flex;align-items:center;justify-content:center}
-  #navInfo .turnMain{flex:1;min-width:0}
-  #navInfo .turnDist{font-size:26px;font-weight:bold;color:#fff;line-height:1.2}
-  #navInfo .turnStreet{font-size:19px;font-weight:bold;color:#4da3ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  #navInfo .nextChip{display:none;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:8px 12px;font-size:13px;color:#ddd}
-  #navInfo .gpsRow{font-size:12px;color:#ffb020}
-  #navBottom{display:none;position:absolute;bottom:76px;right:12px;left:12px;background:rgba(12,12,12,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:12px 16px;font-size:14px;color:#ddd;z-index:10;box-shadow:0 10px 30px rgba(0,0,0,.5);justify-content:space-between;gap:12px}
-  #navBottom b{color:#fff}
-  body.nav-mode #navBottom{display:flex}
-  body.hud-mode #navBottom{display:none !important}
-  .car-cone{background:none;border:none}
-  .car-cone .cone{font-size:32px;color:#1a7cff;-webkit-text-stroke:2px #fff;text-shadow:0 3px 10px rgba(0,0,0,.55);line-height:1;transition:transform .3s}
-  #navInfo b{color:#1a7cff}
-  #hudBar{display:none;position:absolute;top:12px;right:12px;left:12px;background:rgba(0,0,0,.8);border-radius:14px;padding:12px;text-align:center;z-index:10}
-  #hudBar .big{font-size:34px;font-weight:bold;color:#1a7cff;line-height:1.2}
-  #hudBar .small{font-size:14px;color:#ddd}
-  /* دکمه‌های ناوبری پایین صفحه */
-  #dock{display:none;bottom:12px;right:12px;left:12px;gap:8px}
-  #dock .btn{flex:1;border:none;border-radius:18px;padding:15px 6px;font-size:14px;font-weight:bold;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.45);transition:transform .15s}
-  #dock .btn:active{transform:scale(.96)}
-  .btn-cyan{background:#1a7cff;color:#fff}
-  .btn-dark{background:#222;color:#fff;border:1px solid #444}
-  .btn-red{background:#e5484d;color:#fff}
-  body.nav-mode #routeCard, body.nav-mode #searchBar, body.nav-mode #gpsBtn, body.nav-mode #routeBtn{display:none !important}
-  body.nav-mode #navInfo{display:flex}
-  body.nav-mode #dock{display:flex}
-  body.hud-mode #navInfo{display:none !important}
-  body.hud-mode #hudBar{display:block}
-  #mirrorHint{display:none;position:absolute;bottom:76px;right:12px;left:12px;text-align:center;font-size:12px;color:#ffb020;z-index:2000;background:rgba(0,0,0,.6);border-radius:10px;padding:6px}
-  #mirrorHint.on{display:block}
-  /* پیام کوتاه محو‌شونده */
-  #toast{display:none;position:absolute;top:50%;right:24px;left:24px;transform:translateY(-50%);background:rgba(20,20,20,.95);border:1px solid #444;border-radius:14px;padding:14px;text-align:center;font-size:14px;line-height:1.9;z-index:3000}
-  /* پنجره‌ی تنظیمات: فقط با چرخ‌دنده باز می‌شود */
-  #settingsSheet{display:none;position:absolute;bottom:12px;right:12px;left:12px;background:#111;border:1px solid #333;border-radius:18px;padding:14px;z-index:2500;max-height:70%;overflow:auto}
-  #settingsSheet p{font-size:13px;color:#bbb;line-height:1.9;margin:0 0 8px}
-  #settingsSheet input{width:100%;background:#1c1c1c;border:1px solid #333;color:#fff;border-radius:10px;padding:11px;font-family:inherit;direction:ltr;text-align:left;margin-bottom:8px}
-  #settingsSheet label{font-size:13px;color:#ddd;display:block;margin-top:6px;cursor:pointer}
-  #closeSettings{margin-top:12px;width:100%;border:none;border-radius:12px;padding:12px;font-size:15px;font-weight:bold;font-family:inherit;cursor:pointer;background:#1a7cff;color:#fff}
-  #routeCard{background:rgba(17,17,17,.92) !important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.14);border-radius:24px 24px 18px 18px;box-shadow:0 -10px 40px rgba(0,0,0,.55)}
-  #routeCard .grab{width:44px;height:5px;border-radius:3px;background:rgba(255,255,255,.28);margin:0 auto 10px}
-  .fab{box-shadow:0 8px 24px rgba(0,0,0,.45) !important;transition:transform .15s}
-  .fab:active{transform:scale(.94)}
+:root{--gold:#d9b36c;--gold2:linear-gradient(135deg,#f3dda6,#b98d3e);--cy:#37f2ff;--glass:rgba(14,16,22,.78);--ink:#f4efe6;--mut:#9a968c;--bd:rgba(217,179,108,.28)}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#07080c;color:var(--ink);font-family:Vazirmatn,Tahoma,sans-serif;overflow:hidden}
+#map{position:absolute;inset:0}
+.g{background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--bd);border-radius:22px;box-shadow:0 10px 40px #000a}
+.gb{border:0;background:var(--gold2);color:#1a1409;font:800 16px Vazirmatn,Tahoma,sans-serif;border-radius:16px;padding:14px;cursor:pointer;width:100%}
+.ob{border:1px solid var(--bd);background:transparent;color:var(--gold);font:500 14px Vazirmatn,Tahoma,sans-serif;border-radius:14px;padding:12px;cursor:pointer;width:100%}
+#top{position:absolute;z-index:5;top:calc(env(safe-area-inset-top,0px) + 12px);inset-inline:12px}
+#q{width:100%;background:none;border:0;outline:0;color:var(--ink);font:500 15px Vazirmatn,Tahoma,sans-serif;padding:15px 18px}
+#res{max-height:34vh;overflow:auto}
+#res div{padding:11px 18px;border-top:1px solid var(--bd);font-size:14px;cursor:pointer}#res small{display:block;color:var(--mut);font-size:12px}
+#sheet{position:absolute;z-index:5;inset-inline:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);padding:18px;display:none}
+#sheet .sum{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}#sheet b{font-size:30px;color:var(--gold)}#sheet span{color:var(--mut)}
+.two{display:grid;grid-template-columns:1.4fr 1fr;gap:10px}
+#banner{position:absolute;z-index:6;top:calc(env(safe-area-inset-top,0px) + 12px);inset-inline:12px;padding:14px 18px;display:none;align-items:center;gap:16px}
+#banner svg{width:52px;height:52px;color:var(--gold);flex:none}#bD{font-size:30px;font-weight:800}#bS{font-size:14px;color:var(--mut)}
+#bar{position:absolute;z-index:6;inset-inline:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);padding:14px 18px;display:none;align-items:center;justify-content:space-between;gap:10px}
+#bar .eta{font-size:24px;font-weight:800;color:var(--gold)}#bar small{display:block;color:var(--mut);font-size:12px}
+.cb{display:flex;gap:8px}.cb button{width:46px;height:46px;border-radius:14px;border:1px solid var(--bd);background:#ffffff0d;color:var(--ink);font-size:18px;cursor:pointer}.cb .x{background:#c23b3b;border:0}
+#toast{position:fixed;z-index:30;top:90px;left:50%;transform:translateX(-50%);padding:10px 18px;border-radius:20px;background:var(--glass);border:1px solid var(--bd);font-size:13px;opacity:0;transition:.3s;pointer-events:none}
+.pin{width:20px;height:20px;border-radius:50%;background:#e5484d;border:3px solid #fff;box-shadow:0 0 14px #e5484d}
+.me{width:22px;height:22px;border-radius:50%;background:var(--gold);border:3px solid #fff;box-shadow:0 0 0 8px #d9b36c44}
+/* HUD */
+#hud{position:fixed;inset:0;z-index:20;background:#000;display:none;overflow:hidden}
+#hudView{position:absolute;inset:0;transition:transform .3s}#hudView.flip{transform:scaleX(-1)}
+#hudMap{position:absolute;inset:0;transform:perspective(520px) rotateX(36deg) scale(1.15);transform-origin:50% 90%}
+#cv{width:100%;height:100%;display:block}
+.hl{position:absolute;left:5vmin;top:5vmin;max-width:55%;color:#dffbff;direction:rtl;text-shadow:0 0 12px #37f2ff88}
+.hst{font-size:clamp(18px,4.6vmin,34px);font-weight:500;margin-bottom:1.6vmin}
+.hrow{display:flex;align-items:center;gap:2vmin;font-size:clamp(26px,7vmin,56px);font-weight:800;line-height:1.15}
+.hrow svg{width:clamp(30px,8vmin,64px);height:clamp(30px,8vmin,64px);fill:currentColor;flex:none}
+.hrow.t{font-size:clamp(18px,4.6vmin,36px);font-weight:500;opacity:.85}.hrow.t svg{fill:none;stroke:currentColor;stroke-width:2;width:clamp(22px,5vmin,40px);height:clamp(22px,5vmin,40px)}
+.hr{position:absolute;right:5vmin;top:4vmin;width:clamp(86px,19vmin,150px);aspect-ratio:1;text-align:center;color:#dffbff;display:grid;place-items:center}
+.hr svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(135deg)}
+.hr b{font-size:clamp(28px,8vmin,60px);font-weight:800;line-height:1;display:block;text-shadow:0 0 14px #37f2ff99}.hr small{font-size:clamp(10px,2.4vmin,16px);opacity:.7}
+#hudCtl{position:absolute;inset-inline:0;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);display:flex;justify-content:center;gap:12px;opacity:.35}
+#hudCtl button{background:#111;color:#fff;border:1px solid #444;border-radius:20px;padding:8px 18px;font:500 13px Vazirmatn,Tahoma,sans-serif}
 </style>
 </head>
 <body>
-<div id="app">
-  <div id="mirrorWrap">
-    <div id="map"></div>
-    <div id="navInfo">
-      <div class="turnRow"><span class="turnArrow" id="turnArrow">↑</span><div class="turnMain"><div class="turnDist" id="turnDist">—</div><div class="turnStreet" id="turnStreet">آماده‌ی حرکت</div></div></div>
-      <div class="nextChip" id="nextChip">و بعد: <span id="nextNext">—</span></div>
-      <div class="gpsRow" id="gpsRow">در انتظار سیگنال GPS…</div>
-    </div>
-    <div id="hudBar">
-      <div class="big" id="hudRemain">—</div>
-      <div class="small"><span id="hudNext">—</span> · سرعت <span id="hudSpeed">—</span> کیلومتر بر ساعت</div>
-    </div>
-    <div id="navBottom"><span>رسیدن <b id="etaTime">—</b></span><span><b id="remainDist">—</b> · <b id="remainTime">—</b></span></div>
-  </div>
+<div id="map"></div>
 
-  <div class="ui" id="searchBar"><span class="avatar">👤</span><b>کجا می‌خوای بری؟</b><span class="sicon">🔍</span></div>
-  <button class="ui fab" id="gpsBtn" title="موقعیت من">📍</button>
-  <button class="ui fab" id="routeBtn" title="مسیریابی">🧭</button>
+<div id="top" class="g"><input id="q" placeholder="جستجوی مقصد یا ضربه روی نقشه…" autocomplete="off"><div id="res"></div></div>
+<div id="sheet" class="g"><div class="sum"><b id="sT">—</b><span id="sD">—</span></div>
+ <div class="two"><button class="gb" id="go">شروع مسیریابی</button><button class="ob" id="simB">شبیه‌سازی</button></div></div>
+<div id="banner" class="g"><span id="bI"></span><div><div id="bD">—</div><div id="bS">—</div></div></div>
+<div id="bar" class="g"><div><div class="eta" id="eta">—</div><small id="rem">—</small></div>
+ <div class="cb"><button id="hB" title="HUD">HUD</button><button class="x" id="xB">✕</button></div></div>
+<div id="toast"></div>
 
-  <div class="ui" id="routeCard">
-    <div class="grab"></div>
-    <div class="head"><b>مسیریابی</b><span class="hbtns"><button id="gearBtn">⚙️</button><button id="closeSheetBtn">✕</button></span></div>
-    <div class="frow">
-      <span class="dot o"></span>
-      <input id="originInput" placeholder="مبدا" autocomplete="off">
-      <div class="sugg" id="originSugg"></div>
-      <button id="swapBtn" title="جابه‌جا">⇅</button>
-    </div>
-    <div class="frow">
-      <span class="dot d"></span>
-      <input id="destInput" placeholder="مقصد کجاست؟" autocomplete="off">
-      <div class="sugg" id="destSugg"></div>
-    </div>
-    <button id="startBtn">شروع ▶</button>
-  </div>
-
-  <div class="ui" id="dock">
-    <button class="btn btn-cyan" id="hudBtn">HUD</button>
-    <button class="btn btn-dark" id="mirrorBtn">برعکس صفحه</button>
-    <button class="btn btn-dark" id="rerouteBtn">مسیر جدید</button>
-    <button class="btn btn-red" id="endBtn">پایان</button>
-  </div>
-  <div id="mirrorHint">حالت آینه فعال است — در این حالت ضربه روی نقشه غیرفعال است. برای برگشت، «برعکس صفحه» را بزن.</div>
-
-  <div id="toast"></div>
-
-  <div id="settingsSheet">
-    <p>کلید مسیریابی نشان به‌صورت پیش‌فرض داخل برنامه هست و مسیر با داده‌ی نشان حساب می‌شود؛ اگر نشد، خودکار با OpenStreetMap جایگزین می‌شود.</p>
-    <input id="neshanKey" placeholder="Api-Key سرویس مسیریابی نشان (اختیاری)" autocomplete="off">
-    <p>برای اینکه خودِ نقشه هم مال نشان شود (استایل تیره‌ی نشان، بدون نوشته‌ی OpenStreetMap)، از پنل نشان تب «نقشه وب» یک کلید بساز و اینجا بذار؛ بعد از بستن تنظیمات، صفحه برای اعمال نقشه‌ی نشان دوباره بارگذاری می‌شود.</p>
-    <input id="neshanMapKey" placeholder="کلید نقشه وب نشان (اختیاری)" autocomplete="off">
-    <label><input type="checkbox" id="lightMapToggle"> نقشه روشن (فقط در حالت OSM)</label>
-    <button id="closeSettings">بستن</button>
-  </div>
+<div id="hud"><div id="hudView">
+ <div id="hudMap"><canvas id="cv"></canvas></div>
+ <div class="hl"><div class="hst" id="hSt">—</div>
+  <div class="hrow"><span id="hI"></span><span id="hD">—</span></div>
+  <div class="hrow t"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg><span id="hT">—</span></div></div>
+ <div class="hr"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="#37f2ff33" stroke-width="5" stroke-dasharray="207 276" stroke-linecap="round"/><circle id="ring" cx="50" cy="50" r="44" fill="none" stroke="#37f2ff" stroke-width="5" stroke-dasharray="0 276" stroke-linecap="round" style="filter:drop-shadow(0 0 5px #37f2ff)"/></svg><div><b id="hS">۰</b><small>km/h</small></div></div>
 </div>
+<div id="hudCtl"><button id="mir">آینه</button><button id="hX">خروج</button></div></div>
+
 <script>
-'use strict';
-/* بدون هیچ صدایی: نه راهنمای صوتی، نه بوق. فقط نقشه و متن. */
-/* بارگذاری کتابخانه‌ی نقشه: اول SDK نشان، اگر نشد لیفلت استاندارد */
-function loadScript(src, timeoutMs){
-  return new Promise(function(resolve, reject){
-    var s = document.createElement('script');
-    var done = false;
-    var timer = setTimeout(function(){ if (!done){ done = true; reject(new Error('timeout')); } }, timeoutMs || 8000);
-    s.onload = function(){ if (!done){ done = true; clearTimeout(timer); resolve(); } };
-    s.onerror = function(){ if (!done){ done = true; clearTimeout(timer); reject(new Error('load-error')); } };
-    s.src = src;
-    document.head.appendChild(s);
-  });
-}
-loadScript('https://static.neshan.org/sdk/leaflet/v1.9.4/neshan-sdk/v1.0.8/index.js', 8000).then(function(){
-  window.__neshanSdk = true;
-  initApp();
-}).catch(function(){
-  loadScript('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js', 8000).then(function(){
-    initApp();
-  }).catch(function(){
-    var t = document.getElementById('toast');
-    t.textContent = 'کتابخانه‌ی نقشه بارگذاری نشد؛ اتصال اینترنت را بررسی کن و صفحه را رفرش کن.';
-    t.style.display = 'block';
-  });
-});
-function initApp(){
-/* کلید نقشه‌ی وب نشان که صاحب برنامه، مثل کلید مسیریابی و با همان آگاهی از ریسک عمومی‌شدن،
-   گذاشتن مستقیم آن را در کد تأیید کرده است. قفل دامنه در پنل نشان روی همین سایت تنظیم شده است. */
-var BUILTIN_NESHAN_MAP_KEY = 'web.292eb260630440859776333b3d9f72a1';
-var storedMapKey = '';
-try { storedMapKey = localStorage.getItem('neshan_map_key') || BUILTIN_NESHAN_MAP_KEY; } catch(e){ storedMapKey = BUILTIN_NESHAN_MAP_KEY; }
-var map;
-if (storedMapKey && window.__neshanSdk){
-  /* نقشه‌ی نشان با استایل تیره‌ی dreamy و لایه‌ی ترافیک */
-  map = new L.Map('map', { key: storedMapKey, maptype: 'dreamy', traffic: true, zoomControl: false, center: [30.67, 51.58], zoom: 13 });
-  try { if (typeof map.setMapType === 'function') map.setMapType('dreamy'); } catch(e){}
-} else {
-  document.body.classList.add('osm-map');
-  map = L.map('map', { zoomControl: false }).setView([30.67, 51.58], 13);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap contributors'
-  }).addTo(map);
-}
+/* ====== تنظیمات / کلیدها ====== */
+const CFG={MAP_KEY:'web.292eb260630440859776333b3d9f72a1',SERVICE_KEY:'service.399ca876d2b84549b70a2043cb6bb583',DEFAULT:[51.58,30.67]};
 
-var state = {
-  origin: null, dest: null,
-  routeCoords: [], routeLayer: null, casingLayer: null,
-  maneuvers: [], totalDist: 0, totalTime: 0,
-  navMode: false, hudMode: false, mirrored: false,
-  watchId: null, userMarker: null, userPos: null, wakeLock: null
-};
-var $ = function(id){ return document.getElementById(id); };
-var toastTimer = null;
-function showToast(t, ms){
-  var el = $('toast');
-  el.textContent = t;
-  el.style.display = 'block';
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(function(){ el.style.display = 'none'; }, ms || 5000);
-}
-function fmtDist(m){
-  if (m == null) return '—';
-  if (m < 1000) return Math.round(m) + ' متر';
-  return (m / 1000).toFixed(m < 10000 ? 1 : 0) + ' کیلومتر';
-}
-function fmtTime(s){
-  if (s == null) return '—';
-  var m = Math.round(s / 60);
-  if (m < 60) return m + ' دقیقه';
-  return Math.floor(m / 60) + ' ساعت و ' + (m % 60) + ' دقیقه';
-}
-function haversine(a, b){
-  var R = 6371000, p = Math.PI / 180;
-  var dLat = (b.lat - a.lat) * p, dLon = (b.lon - a.lon) * p;
-  var x = Math.sin(dLat/2)*Math.sin(dLat/2) +
-          Math.cos(a.lat*p)*Math.cos(b.lat*p)*Math.sin(dLon/2)*Math.sin(dLon/2);
-  return 2 * R * Math.asin(Math.sqrt(x));
-}
+const $=s=>document.querySelector(s),fa=x=>String(x).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]).replace('.','٫');
+const rad=Math.PI/180,R=6371000;
+let map,meMk,dstMk,route,pos=null,navOn=false,sim=null,wid=null,idx=0,off=0,hd=0,spd=0,dst=null;
+const hav=(a,b)=>{const x=Math.sin((b[1]-a[1])*rad/2)**2+Math.cos(a[1]*rad)*Math.cos(b[1]*rad)*Math.sin((b[0]-a[0])*rad/2)**2;return 2*R*Math.asin(Math.sqrt(x))};
+const brg=(a,b)=>{const dl=(b[0]-a[0])*rad,y=Math.sin(dl)*Math.cos(b[1]*rad),x=Math.cos(a[1]*rad)*Math.sin(b[1]*rad)-Math.sin(a[1]*rad)*Math.cos(b[1]*rad)*Math.cos(dl);return(Math.atan2(y,x)/rad+360)%360};
+function dec(s){let i=0,la=0,lo=0,o=[];while(i<s.length){for(let k=0;k<2;k++){let r=0,sh=0,b;do{b=s.charCodeAt(i++)-63;r|=(b&31)<<sh;sh+=5}while(b>=32);const d=(r&1)?~(r>>1):r>>1;k?lo+=d:la+=d}o.push([lo/1e5,la/1e5])}return o}
+function toast(t){const e=$('#toast');e.textContent=t;e.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.opacity=0,2600)}
+const fd=m=>m<1000?fa(Math.max(0,Math.round(m/10)*10))+' متر':fa((m/1000).toFixed(1))+' کیلومتر';
+const fm=s=>{const m=Math.max(1,Math.round(s/60));return m<60?fa(m)+' دقیقه':fa(Math.floor(m/60))+' ساعت و '+fa(m%60)+' دقیقه'};
 
-var originMarker = null, destMarker = null;
-function setPoint(kind, lat, lon, name){
-  if (kind === 'origin'){
-    state.origin = { lat: lat, lon: lon, name: name || '' };
-    if (originMarker) map.removeLayer(originMarker);
-    originMarker = L.marker([lat, lon], { title: 'مبدا' }).addTo(map);
-    $('originInput').value = name || (lat.toFixed(5) + ', ' + lon.toFixed(5));
-  } else {
-    state.dest = { lat: lat, lon: lon, name: name || '' };
-    if (destMarker) map.removeLayer(destMarker);
-    destMarker = L.marker([lat, lon], { title: 'مقصد' }).addTo(map);
-    $('destInput').value = name || (lat.toFixed(5) + ', ' + lon.toFixed(5));
-  }
-}
+/* آیکن پیچ‌ها */
+function ico(m,t){m=(m||'').toLowerCase();let p,tr='';
+ if(t==='arrive')p='M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12zm0-9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z';
+ else if(/roundabout|rotary/.test(t||''))p='M12 3a9 9 0 1 0 9 9h-3a6 6 0 1 1-6-6V3zM12 1l5 4-5 4z';
+ else if(m==='uturn')p='M7 21V9a5 5 0 0 1 10 0v6h3l-5 6-5-6h3V9a1 1 0 0 0-2 0v12z';
+ else if(m==='left'||m==='right'){p='M6 21V13a4 4 0 0 1 4-4h5V6l5.5 5.5L15 17v-3h-5v7z';if(m==='left')tr='transform:scaleX(-1)'}
+ else{p='M12 3l7 8h-4.5v10h-5V11H5z';const a={'slight right':35,'slight left':-35,'sharp right':135,'sharp left':-135}[m];if(a)tr='transform:rotate('+a+'deg)'}
+ return '<svg viewBox="0 0 24 24" fill="currentColor" style="'+tr+'"><path d="'+p+'"/></svg>'}
 
-function bindSearch(inputEl, suggEl, kind){
-  var timer = null;
-  inputEl.addEventListener('input', function(){
-    var q = inputEl.value.trim();
-    if (q.length < 2){ suggEl.style.display = 'none'; return; }
-    clearTimeout(timer);
-    timer = setTimeout(function(){
-      var url = 'https://photon.komoot.io/api/?q=' + encodeURIComponent(q) +
-                '&lang=fa&limit=6&lat=30.67&lon=51.58';
-      fetch(url).then(function(r){ return r.json(); }).then(function(j){
-        var feats = (j.features || []).slice(0, 6);
-        if (!feats.length){ suggEl.style.display = 'none'; return; }
-        suggEl.innerHTML = '';
-        feats.forEach(function(f){
-          var p = f.properties || {};
-          var label = [p.name, p.city, p.state, p.country].filter(Boolean).join('، ') || q;
-          var d = document.createElement('div');
-          d.textContent = label;
-          d.addEventListener('click', function(){
-            var lon = f.geometry.coordinates[0], lat = f.geometry.coordinates[1];
-            setPoint(kind, lat, lon, label);
-            suggEl.style.display = 'none';
-            map.setView([lat, lon], 15);
-          });
-          suggEl.appendChild(d);
-        });
-        suggEl.style.display = 'block';
-      }).catch(function(){ suggEl.style.display = 'none'; });
-    }, 350);
-  });
-  document.addEventListener('click', function(e){
-    if (e.target !== inputEl && !suggEl.contains(e.target)) suggEl.style.display = 'none';
-  });
-}
-bindSearch($('originInput'), $('originSugg'), 'origin');
-bindSearch($('destInput'), $('destSugg'), 'dest');
+/* نقشه */
+try{map=new nmp_mapboxgl.Map({mapType:nmp_mapboxgl.Map.mapTypes.neshanVectorNight,container:'map',zoom:13,pitch:0,center:CFG.DEFAULT,minZoom:2,maxZoom:21,trackResize:true,mapKey:CFG.MAP_KEY,poi:true,traffic:false,mapTypeControl:false});
+ const el=document.createElement('div');el.className='me';meMk=new nmp_mapboxgl.Marker({element:el}).setLngLat(CFG.DEFAULT).addTo(map);
+ map.on('click',e=>setDest([e.lngLat.lng,e.lngLat.lat]))}catch(e){toast('بارگذاری نقشه نشان ممکن نشد')}
+if(navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>{pos=[p.coords.longitude,p.coords.latitude];meMk&&meMk.setLngLat(pos);map&&map.jumpTo({center:pos,zoom:14})},()=>{},{enableHighAccuracy:true});
 
-/* شیت مسیر */
-function openSheet(focusDest){
-  document.body.classList.add('sheet-open');
-  if (focusDest) setTimeout(function(){ $('destInput').focus(); }, 50);
-}
-function closeSheet(){ document.body.classList.remove('sheet-open'); }
-$('searchBar').addEventListener('click', function(){ openSheet(true); });
-$('routeBtn').addEventListener('click', function(){ openSheet(false); });
-$('closeSheetBtn').addEventListener('click', closeSheet);
+/* جستجو */
+let st;$('#q').oninput=e=>{clearTimeout(st);const v=e.target.value.trim();if(v.length<2){$('#res').innerHTML='';return}
+ st=setTimeout(async()=>{try{const c=pos||CFG.DEFAULT,r=await fetch('https://api.neshan.org/v1/search?term='+encodeURIComponent(v)+'&lat='+c[1]+'&lng='+c[0],{headers:{'Api-Key':CFG.SERVICE_KEY}}),j=await r.json();
+ $('#res').innerHTML='';(j.items||[]).slice(0,6).forEach(it=>{const d=document.createElement('div');d.innerHTML=it.title+'<small>'+(it.address||'')+'</small>';d.onclick=()=>{$('#res').innerHTML='';$('#q').value=it.title;const p=[it.location.x,it.location.y];map.flyTo({center:p,zoom:15});setDest(p)};$('#res').appendChild(d)})}catch(e){toast('جستجو ناموفق بود')}},350)};
 
-/* ضربه روی نقشه = مقصد، و شیت باز می‌شود */
-map.on('click', function(e){
-  if (state.mirrored || state.navMode) return;
-  setPoint('dest', e.latlng.lat, e.latlng.lng, 'نقطه روی نقشه');
-  openSheet(false);
-});
+/* مسیریابی */
+async function setDest(d){if(navOn)return;dst=d;if(!dstMk){const el=document.createElement('div');el.className='pin';dstMk=new nmp_mapboxgl.Marker({element:el})}dstMk.setLngLat(d).addTo(map);
+ const o=pos||CFG.DEFAULT;toast('در حال مسیریابی…');
+ try{const r=await fetch('https://api.neshan.org/v4/direction?type=car&origin='+o[1]+','+o[0]+'&destination='+d[1]+','+d[0],{headers:{'Api-Key':CFG.SERVICE_KEY}}),j=await r.json();
+  if(!j.routes||!j.routes[0])throw 0;const rt=j.routes[0],L=rt.legs[0];
+  build({pts:dec(rt.overview_polyline.points),dur:L.duration.value,steps:L.steps});return true}
+ catch(e){toast('دریافت مسیر ناموفق بود؛ اتصال اینترنت را بررسی کن');return false}}
+function near(pts,p,a,b){let bi=a,bd=1e12;for(let i=a;i<Math.min(pts.length,b);i++){const d=(pts[i][0]-p[0])**2+(pts[i][1]-p[1])**2;if(d<bd){bd=d;bi=i}}return bi}
+function build(o){const pts=o.pts,cum=[0];for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+hav(pts[i-1],pts[i]));
+ let sc=0;const steps=(o.steps||[]).map(s=>{const l=s.start_location;let sl=null;
+  if(Array.isArray(l)&&isFinite(l[0])&&isFinite(l[1]))sl=l;
+  else if(l&&typeof l==='object'){const x=l.x??l.lng??l.lon, y=l.y??l.lat; if(isFinite(x)&&isFinite(y))sl=[x,y];}
+  sc+=(s.distance&&s.distance.value)||0;
+  let ii=sl?near(pts,sl,0,pts.length):0;
+  if(!sl){ii=cum.findIndex(v=>v>=sc);if(ii<0)ii=pts.length-1;}
+  return{...s,i:ii}});
+ if(!steps.length)steps.push({instruction:'ادامه دهید',modifier:'straight',name:'',i:pts.length-1});
+ route={pts,cum,steps,total:cum[cum.length-1],dur:o.dur||cum[cum.length-1]/11};idx=0;off=0;
+ const gj={type:'Feature',geometry:{type:'LineString',coordinates:pts}};
+ if(map.getSource('route'))map.getSource('route').setData(gj);else{map.addSource('route',{type:'geojson',data:gj});
+  map.addLayer({id:'rg',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#d9b36c','line-width':16,'line-opacity':.25,'line-blur':6}});
+  map.addLayer({id:'rl',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#f3dda6','line-width':6}})}
+ const b=new nmp_mapboxgl.LngLatBounds();pts.forEach(p=>b.extend(p));map.fitBounds(b,{padding:{top:130,bottom:240,left:40,right:40}});
+ $('#sT').textContent=fm(route.dur);$('#sD').textContent=fd(route.total);if(!navOn)$('#sheet').style.display='block'}
 
-function locateOnce(){
-  return new Promise(function(resolve, reject){
-    if (!navigator.geolocation){ reject(new Error('no-geo')); return; }
-    navigator.geolocation.getCurrentPosition(function(p){
-      resolve({ lat: p.coords.latitude, lon: p.coords.longitude });
-    }, function(){ reject(new Error('denied')); },
-    { enableHighAccuracy: true, timeout: 12000, maximumAge: 5000 });
-  });
-}
-function useMyLocation(){
-  locateOnce().then(function(pos){
-    setPoint('origin', pos.lat, pos.lon, 'موقعیت من');
-    map.setView([pos.lat, pos.lon], 15);
-  }).catch(function(){
-    showToast('موقعیت پیدا نشد؛ دسترسی GPS را بده یا مبدا را دستی انتخاب کن.');
-  });
-}
-$('gpsBtn').addEventListener('click', useMyLocation);
-$('swapBtn').addEventListener('click', function(){
-  var o = state.origin, d = state.dest;
-  if (!o && !d) return;
-  state.origin = d; state.dest = o;
-  if (originMarker){ map.removeLayer(originMarker); originMarker = null; }
-  if (destMarker){ map.removeLayer(destMarker); destMarker = null; }
-  if (state.origin) setPoint('origin', state.origin.lat, state.origin.lon, state.origin.name);
-  if (state.dest) setPoint('dest', state.dest.lat, state.dest.lon, state.dest.name);
-  $('originInput').value = state.origin ? (state.origin.name || '') : '';
-  $('destInput').value = state.dest ? (state.dest.name || '') : '';
-});
 
-/* تنظیمات: فقط با چرخ‌دنده داخل شیت */
-$('gearBtn').addEventListener('click', function(){ $('settingsSheet').style.display = 'block'; });
-$('closeSettings').addEventListener('click', function(){
-  var newMapKey = ($('neshanMapKey').value || '').trim();
-  try {
-    var oldMapKey = localStorage.getItem('neshan_map_key') || '';
-    localStorage.setItem('neshan_map_key', newMapKey);
-    var svc = ($('neshanKey').value || '').trim();
-    if (svc) localStorage.setItem('neshan_key', svc);
-    $('settingsSheet').style.display = 'none';
-    if (newMapKey !== oldMapKey) location.reload();
-  } catch(e){ $('settingsSheet').style.display = 'none'; }
-});
-$('lightMapToggle').addEventListener('change', function(e){
-  document.body.classList.toggle('light-map', e.target.checked);
-});
+/* ناوبری */
 
-function decodePolyline(str){
-  var coords = [], index = 0, lat = 0, lon = 0;
-  while (index < str.length){
-    var b, shift = 0, result = 0;
-    do { b = str.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
-    lat += (result & 1) ? ~(result >> 1) : (result >> 1);
-    shift = 0; result = 0;
-    do { b = str.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
-    lon += (result & 1) ? ~(result >> 1) : (result >> 1);
-    coords.push({ lat: lat / 1e5, lon: lon / 1e5 });
-  }
-  return coords;
+function startNav(simulate){if(!route){toast('اول مقصد را مشخص کن');return;}navOn=true;idx=0;$('#top').style.display=$('#sheet').style.display='none';$('#banner').style.display=$('#bar').style.display='flex';$('#bS').textContent='در انتظار سیگنال GPS…';$('#bD').textContent='—';
+ navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{});
+ if(simulate){let dist=0;sim=setInterval(()=>{dist+=14*.5*(1+.2*Math.sin(dist/90));const c=route.cum;const i=c.findIndex(v=>v>=dist);if(i<1){stopNav();return}
+  const f=(dist-c[i-1])/(c[i]-c[i-1]||1),a=route.pts[i-1],b=route.pts[i];fix([a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f],14*3.6,brg(a,b))},500)}
+ else if(navigator.geolocation)wid=navigator.geolocation.watchPosition(p=>fix([p.coords.longitude,p.coords.latitude],(p.coords.speed||0)*3.6,p.coords.heading),()=>toast('دسترسی به GPS ممکن نشد'),{enableHighAccuracy:true,maximumAge:500});
 }
-/* کلید مسیریابی نشان که صاحب برنامه با آگاهی از ریسک عمومی‌شدن، گذاشتن مستقیم آن را در کد تأیید کرده است.
-   قفل دامنه در پنل نشان روی همین سایت تنظیم شده است. */
-var BUILTIN_NESHAN_KEY = 'service.399ca876d2b84549b70a2043cb6bb583';
-function neshanKey(){
-  var v = ($('neshanKey').value || '').trim();
-  if (v){ try { localStorage.setItem('neshan_key', v); } catch(e){} return v; }
-  try { return localStorage.getItem('neshan_key') || BUILTIN_NESHAN_KEY; } catch(e){ return BUILTIN_NESHAN_KEY; }
-}
-try {
-  var savedSvc = localStorage.getItem('neshan_key');
-  $('neshanKey').value = savedSvc || BUILTIN_NESHAN_KEY;
-  $('neshanMapKey').value = storedMapKey;
-} catch(e){}
-function routeWithOSRM(o, d){
-  var url = 'https://routing.openstreetmap.de/routed-car/route/v1/driving/' +
-    o.lon + ',' + o.lat + ';' + d.lon + ',' + d.lat +
-    '?overview=full&geometries=geojson&steps=true&language=fa';
-  return fetch(url).then(function(r){ return r.json(); }).then(function(j){
-    if (!j.routes || !j.routes.length) throw new Error('OSM: مسیری پیدا نشد');
-    var r0 = j.routes[0];
-    var coords = r0.geometry.coordinates.map(function(c){ return { lon: c[0], lat: c[1] }; });
-    var mans = [], along = 0;
-    (r0.legs || []).forEach(function(leg){
-      (leg.steps || []).forEach(function(st){
-        var m = st.maneuver || {};
-        mans.push({ at: along, dist: st.distance || 0, name: st.name || '',
-          loc: m.location ? { lon: m.location[0], lat: m.location[1] } : null,
-          type: m.type || '', modifier: m.modifier || '' });
-        along += st.distance || 0;
-      });
-    });
-    return { coords: coords, dist: r0.distance, time: r0.duration, maneuvers: mans };
-  }).catch(function(e){
-    if (e && e.message && e.message.indexOf('OSM:') === 0) throw e;
-    throw new Error('OSM: در دسترس نیست');
-  });
-}
-function routeWithNeshan(o, d, key){
-  var url = 'https://api.neshan.org/v4/direction?type=car&origin=' + o.lat + ',' + o.lon +
-            '&destination=' + d.lat + ',' + d.lon;
-  return fetch(url, { headers: { 'Api-Key': key } }).then(function(r){ return r.json(); }).then(function(j){
-    if (!j.routes || !j.routes.length){
-      var detail = (j && j.message) ? j.message : ((j && j.code) ? ('کد ' + j.code) : 'خطا');
-      throw new Error('نشان: ' + detail);
-    }
-    var r0 = j.routes[0];
-    var coords = decodePolyline(r0.overview_polyline.points);
-    var leg = (r0.legs || [])[0] || {};
-    var dist = leg.distance ? (leg.distance.value || 0) : 0;
-    var time = leg.duration ? (leg.duration.value || 0) : 0;
-    if (!dist){ for (var i = 1; i < coords.length; i++) dist += haversine(coords[i-1], coords[i]); }
-    var mans = [], alongN = 0;
-    (leg.steps || []).forEach(function(st){
-      var d = st.distance ? (st.distance.value || 0) : 0;
-      var ins = st.instruction || '';
-      var mod = '';
-      if (/دوربرگردان|دور بزن/.test(ins)) mod = 'uturn';
-      else if (/میدان/.test(ins)) mod = 'roundabout';
-      else if (/کمی به چپ|کمی چپ/.test(ins)) mod = 'slight left';
-      else if (/کمی به راست|کمی راست/.test(ins)) mod = 'slight right';
-      else if (/به چپ|سمت چپ/.test(ins)) mod = 'left';
-      else if (/به راست|سمت راست/.test(ins)) mod = 'right';
-      else if (/مستقیم/.test(ins)) mod = 'straight';
-      mans.push({ at: alongN, dist: d, name: st.name || '', instruction: ins, modifier: mod, type: /رسید/.test(ins) ? 'arrive' : '' });
-      alongN += d;
-    });
-    return { coords: coords, dist: dist, time: time, maneuvers: mans };
-  }).catch(function(e){
-    if (e && e.message && e.message.indexOf('نشان:') === 0) throw e;
-    throw new Error('نشان: در دسترس نیست');
-  });
-}
-function drawRoute(res){
-  if (state.casingLayer) map.removeLayer(state.casingLayer);
-  if (state.routeLayer) map.removeLayer(state.routeLayer);
-  var latlngs = res.coords.map(function(c){ return [c.lat, c.lon]; });
-  state.routeCoords = res.coords;
-  state.totalDist = res.dist; state.totalTime = res.time;
-  state.maneuvers = res.maneuvers || [];
-  if (state.glowLayer) map.removeLayer(state.glowLayer);
-  state.glowLayer = L.polyline(latlngs, { color: '#1a7cff', weight: 13, opacity: 0.22 }).addTo(map);
-  state.casingLayer = L.polyline(latlngs, { color: '#ffffff', weight: 10, opacity: 0.9 }).addTo(map);
-  state.routeLayer = L.polyline(latlngs, { color: '#1a7cff', weight: 6, opacity: 1 }).addTo(map);
-  map.fitBounds(state.routeLayer.getBounds(), { padding: [30, 30] });
-  $('remainDist').textContent = fmtDist(res.dist);
-  $('remainTime').textContent = fmtTime(res.time);
-  var eta0 = new Date(Date.now() + (res.time || 0) * 1000);
-  $('etaTime').textContent = eta0.getHours() + ':' + String(eta0.getMinutes()).padStart(2, '0');
-}
-function fetchRoute(o, d){
-  var key = neshanKey();
-  if (!key) return routeWithOSRM(o, d);
-  var errNeshan = '';
-  return routeWithNeshan(o, d, key).catch(function(e){
-    errNeshan = e.message || 'نشان: خطا';
-    return routeWithOSRM(o, d);
-  }).catch(function(e2){
-    throw new Error(errNeshan + '؛ ' + (e2.message || 'OSM: خطا'));
-  });
-}
-function progressAlongRoute(pos){
-  var coords = state.routeCoords;
-  if (!coords.length) return null;
-  var best = null;
-  for (var i = 1; i < coords.length; i++){
-    var a = coords[i-1], b = coords[i];
-    var dx = (b.lon - a.lon), dy = (b.lat - a.lat);
-    var len2 = dx*dx + dy*dy;
-    var t = len2 ? ((pos.lon - a.lon)*dx + (pos.lat - a.lat)*dy) / len2 : 0;
-    t = Math.max(0, Math.min(1, t));
-    var proj = { lon: a.lon + t*dx, lat: a.lat + t*dy };
-    var dd = haversine(pos, proj);
-    if (!best || dd < best.dd) best = { dd: dd, seg: i, t: t, proj: proj };
-  }
-  if (!best || best.dd > 200) return null;
-  var remain = best.dd, along = 0;
-  for (var j = 1; j < best.seg; j++) along += haversine(coords[j-1], coords[j]);
-  along += haversine(coords[best.seg-1], best.proj);
-  for (var k = best.seg; k < coords.length; k++) remain += haversine(coords[k-1], coords[k]);
-  remain -= haversine(coords[best.seg-1], best.proj);
-  return { along: along, remain: remain };
-}
-var ARROW = { left: '←', right: '→', 'slight left': '↖', 'slight right': '↗',
-  straight: '↑', uturn: '↩', 'sharp left': '↰', 'sharp right': '↱', roundabout: '◌' };
-var VERB = { left: 'به چپ', right: 'به راست', 'slight left': 'کمی به چپ',
-  'slight right': 'کمی به راست', straight: 'مستقیم', uturn: 'دور بزن',
-  'sharp left': 'کامل به چپ', 'sharp right': 'کامل به راست', roundabout: 'وارد میدان شو' };
-function nextManeuverText(along){
-  var mans = state.maneuvers;
-  if (!mans.length) return '';
-  var nxt = null;
-  for (var i = 0; i < mans.length; i++){ if (mans[i].at > along + 5){ nxt = mans[i]; break; } }
-  if (!nxt) return 'به مقصد رسیدی';
-  var d = Math.max(0, Math.round(nxt.at - along));
-  var arrow = ARROW[nxt.modifier] || '↑';
-  var verb = VERB[nxt.modifier] || (nxt.type === 'arrive' ? 'به مقصد رسیدی' : 'ادامه بده');
-  return 'در ' + fmtDist(d) + ' ' + arrow + ' ' + verb;
-}
-function upcomingManeuvers(along){
-  var list = [];
-  for (var i = 0; i < state.maneuvers.length; i++){ if (state.maneuvers[i].at > along + 5) list.push(state.maneuvers[i]); }
-  return list;
-}
-function refreshNavInfo(){
-  if (!state.userPos || !state.routeCoords.length) return;
-  var prog = progressAlongRoute(state.userPos);
-  if (!prog) return;
-  $('gpsRow').style.display = 'none';
-  $('hudRemain').textContent = fmtDist(prog.remain);
-  $('hudNext').textContent = nextManeuverText(prog.along);
-  var up = upcomingManeuvers(prog.along);
-  var nxt = up[0];
-  if (nxt){
-    $('turnDist').textContent = fmtDist(Math.max(0, Math.round(nxt.at - prog.along)));
-    $('turnStreet').textContent = nxt.name || (VERB[nxt.modifier] || 'ادامه‌ی مسیر');
-    $('turnArrow').textContent = ARROW[nxt.modifier] || '↑';
-    if (up[1]){
-      $('nextChip').style.display = 'block';
-      $('nextNext').textContent = (up[1].name ? up[1].name + ' · ' : '') + (VERB[up[1].modifier] || 'ادامه بده');
-    } else $('nextChip').style.display = 'none';
-  } else {
-    $('turnDist').textContent = 'رسیدی';
-    $('turnStreet').textContent = 'به مقصد رسیدی';
-    $('turnArrow').textContent = '●';
-    $('nextChip').style.display = 'none';
-  }
-  var remainT = state.totalDist ? state.totalTime * (prog.remain / state.totalDist) : 0;
-  $('remainDist').textContent = fmtDist(prog.remain);
-  $('remainTime').textContent = fmtTime(remainT);
-  var eta = new Date(Date.now() + remainT * 1000);
-  $('etaTime').textContent = eta.getHours() + ':' + String(eta.getMinutes()).padStart(2, '0');
-}
-function requestWakeLock(){
-  try {
-    if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function(w){ state.wakeLock = w; }).catch(function(){});
-  } catch(e){}
-}
-document.addEventListener('visibilitychange', function(){
-  if (!document.hidden && state.navMode) requestWakeLock();
-});
-function bearingDeg(a, b){
-  var dLon = (b.lon - a.lon) * Math.PI / 180;
-  var lat1 = a.lat * Math.PI / 180, lat2 = b.lat * Math.PI / 180;
-  var y = Math.sin(dLon) * Math.cos(lat2);
-  var x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
-  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
-}
-function placeCarMarker(pos, heading){
-  if (!state.userMarker){
-    state.userMarker = L.marker([pos.lat, pos.lon], { icon: L.divIcon({ className: 'car-cone', html: '<div class="cone">▲</div>', iconSize: [36, 36], iconAnchor: [18, 18] }) }).addTo(map);
-  } else state.userMarker.setLatLng([pos.lat, pos.lon]);
-  if (heading != null){
-    var el = state.userMarker.getElement();
-    if (el){ var cone = el.querySelector('.cone'); if (cone) cone.style.transform = 'rotate(' + heading + 'deg)'; }
-  }
-}
-function startNav(){
-  if (!state.origin){ showToast('اول مبدا را مشخص کن (موقعیت من یا جست‌وجو).'); return; }
-  if (!state.dest){ showToast('اول مقصد را مشخص کن (جست‌وجو یا ضربه روی نقشه).'); return; }
-  closeSheet();
-  showToast('در حال گرفتن مسیر…', 6000);
-  fetchRoute(state.origin, state.dest).then(function(res){
-    drawRoute(res);
-    document.body.classList.add('nav-mode');
-    state.navMode = true;
-    requestWakeLock();
-    if (state.watchId != null) navigator.geolocation.clearWatch(state.watchId);
-    if (state.origin){
-      placeCarMarker(state.origin, null);
-      map.setView([state.origin.lat, state.origin.lon], Math.max(map.getZoom(), 16));
-      $('gpsRow').style.display = 'block';
-      $('gpsRow').textContent = 'در انتظار سیگنال GPS…';
-    }
-    if (navigator.geolocation){
-      state.watchId = navigator.geolocation.watchPosition(function(p){
-        var pos = { lat: p.coords.latitude, lon: p.coords.longitude };
-        var heading = (p.coords.heading != null && !isNaN(p.coords.heading)) ? p.coords.heading : null;
-        if (heading == null && state.userPos) heading = bearingDeg(state.userPos, pos);
-        state.userPos = pos;
-        placeCarMarker(pos, heading);
-        if (state.navMode) map.setView([pos.lat, pos.lon], Math.max(map.getZoom(), 16));
-        var sp = (p.coords.speed != null) ? Math.round(p.coords.speed * 3.6) : null;
-        $('hudSpeed').textContent = (sp != null) ? sp : '—';
-        refreshNavInfo();
-      }, function(){
-        $('gpsRow').style.display = 'block';
-        $('gpsRow').textContent = 'GPS در دسترس نیست؛ موقعیت‌یابی گوشی را روشن کن و زیر آسمان باز باش.';
-        showToast('GPS در دسترس نیست؛ موقعیت‌یابی گوشی را روشن کن.');
-      }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 });
-    }
-  }).catch(function(e){
-    showToast('مسیر پیدا نشد: ' + (e.message || 'خطا') + ' — اتصال اینترنت را بررسی کن و دوباره بزن.', 9000);
-  });
-}
-function endNav(){
-  document.body.classList.remove('nav-mode');
-  document.body.classList.remove('hud-mode');
-  closeSheet();
-  state.navMode = false; state.hudMode = false;
-  $('hudBtn').textContent = 'HUD';
-  if (state.watchId != null){ navigator.geolocation.clearWatch(state.watchId); state.watchId = null; }
-  if (state.wakeLock){ try { state.wakeLock.release(); } catch(e){} state.wakeLock = null; }
-  if (state.glowLayer) map.removeLayer(state.glowLayer);
-  if (state.casingLayer) map.removeLayer(state.casingLayer);
-  if (state.routeLayer) map.removeLayer(state.routeLayer);
-  state.routeCoords = [];
-  if (state.userMarker){ map.removeLayer(state.userMarker); state.userMarker = null; }
-}
-$('startBtn').addEventListener('click', startNav);
-$('endBtn').addEventListener('click', endNav);
-$('rerouteBtn').addEventListener('click', function(){
-  if (!state.dest) return;
-  locateOnce().then(function(pos){
-    setPoint('origin', pos.lat, pos.lon, 'موقعیت من');
-    return fetchRoute(state.origin, state.dest);
-  }).then(drawRoute).catch(function(e){
-    showToast('مسیر جدید پیدا نشد: ' + (e.message || 'خطا'), 9000);
-  });
-});
-$('hudBtn').addEventListener('click', function(){
-  state.hudMode = !state.hudMode;
-  document.body.classList.toggle('hud-mode', state.hudMode);
-  $('hudBtn').textContent = state.hudMode ? 'خروج از HUD' : 'HUD';
-  if (state.hudMode) setTimeout(function(){ map.invalidateSize(); }, 50);
-});
-$('mirrorBtn').addEventListener('click', function(){
-  state.mirrored = !state.mirrored;
-  $('mirrorWrap').classList.toggle('mirrored', state.mirrored);
-  $('mirrorHint').classList.toggle('on', state.mirrored);
-  $('mirrorBtn').textContent = state.mirrored ? 'برگردوندن صفحه' : 'برعکس صفحه';
-  setTimeout(function(){ map.invalidateSize(); }, 50);
-});
-locateOnce().then(function(pos){
-  setPoint('origin', pos.lat, pos.lon, 'موقعیت من');
-  map.setView([pos.lat, pos.lon], 14);
-}).catch(function(){
-  showToast('موقعیت پیدا نشد؛ مبدا را دستی انتخاب کن.');
-});
-}
+function fix(p,sp,h){pos=p;spd=sp||0;meMk.setLngLat(p);const pts=route.pts;idx=near(pts,p,idx,idx+250);
+ if(hav(p,pts[idx])>70){if(++off>3&&!sim){off=0;toast('خارج از مسیر؛ مسیر جدید…');navOn=false;setDest(dst).then(ok=>{navOn=true;if(ok)idx=0})}}else off=0;
+ hd=(h!=null&&!isNaN(h)&&sp>3)?h:brg(pts[idx],pts[Math.min(pts.length-1,idx+4)]);
+ const rem=route.total-route.cum[idx],nx=route.steps.find(s=>s.i>idx)||route.steps[route.steps.length-1],dn=Math.max(0,route.cum[nx.i]-route.cum[idx]),sec=route.dur*rem/route.total;
+ if(rem<25){toast('به مقصد رسیدید');return stopNav()}
+ const modFromIns=(()=>{const t=nx.instruction||'';if(/دوربرگردان|دور بزن/.test(t))return'uturn';if(/میدان/.test(t))return'roundabout';if(/کمی به چپ|کمی چپ/.test(t))return'slight left';if(/کمی به راست|کمی راست/.test(t))return'slight right';if(/به چپ|سمت چپ/.test(t))return'left';if(/به راست|سمت راست/.test(t))return'right';if(/مستقیم/.test(t))return'straight';return nx.modifier||'straight'})();
+ const isArr=/رسید/.test(nx.instruction||'')||nx.type==='arrive';
+ const ic=ico(modFromIns,isArr?'arrive':''),txt=nx.instruction||'ادامه دهید';
+ $('#bI').innerHTML=ic;$('#bD').textContent=fd(dn);$('#bS').textContent=txt+(nx.name?' · '+nx.name:'');
+ $('#eta').textContent=fm(sec);$('#rem').textContent=fd(rem)+' · رسیدن '+new Date(Date.now()+sec*1000).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
+ $('#hI').innerHTML=ic;$('#hD').textContent=fd(dn);$('#hSt').textContent=nx.name||txt;$('#hT').textContent=fm(sec);$('#hS').textContent=fa(Math.round(spd));
+ $('#ring').setAttribute('stroke-dasharray',(Math.min(spd,160)/160*207)+' 276');
+
+ if($('#hud').style.display==='block')draw();else map.easeTo({center:p,bearing:hd,zoom:17,pitch:60,duration:900,easing:t=>t,offset:[0,180]})}
+function stopNav(){navOn=false;clearInterval(sim);sim=null;wid!=null&&navigator.geolocation.clearWatch(wid);wid=null;hud(false);
+ $('#banner').style.display=$('#bar').style.display='none';$('#top').style.display='block';$('#sheet').style.display=route?'block':'none';map.easeTo({pitch:0,bearing:0,zoom:14,duration:800})}
+
+/* HUD */
+const cv=$('#cv'),cx=cv.getContext('2d');
+function hud(on){$('#hud').style.display=on?'block':'none';if(on){size();draw();document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{})}else document.fullscreenElement&&document.exitFullscreen()}
+function size(){const r=devicePixelRatio||1;cv.width=cv.clientWidth*r;cv.height=cv.clientHeight*r}
+function draw(){if(!route||!pos)return;const W=cv.width,H=cv.height,k=H*.75/380,b=hd*rad,c=Math.cos(pos[1]*rad);cx.clearRect(0,0,W,H);
+ const X=W/2,Y=H*.82,P=q=>{const dx=(q[0]-pos[0])*c*111320,dy=(q[1]-pos[1])*110540;return[X+(dx*Math.cos(b)-dy*Math.sin(b))*k,Y-(dx*Math.sin(b)+dy*Math.cos(b))*k]};
+ cx.strokeStyle='#37f2ff1c';cx.lineWidth=2;for(let i=1;i<=5;i++){cx.beginPath();cx.arc(X,Y,i*H*.16,0,7);cx.stroke()}
+ cx.lineCap=cx.lineJoin='round';cx.beginPath();let n=0;for(let i=idx;i<route.pts.length&&route.cum[i]-route.cum[idx]<650;i++){const p=P(route.pts[i]);n++?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1])}
+ cx.shadowColor='#37f2ff';cx.shadowBlur=26;cx.strokeStyle='#37f2ff';cx.lineWidth=H*.022;cx.stroke();cx.shadowBlur=0;cx.strokeStyle='#e8ffff';cx.lineWidth=H*.007;cx.stroke();
+ const nx=route.steps.find(s=>s.i>idx);if(nx){const p=P(route.pts[nx.i]);cx.fillStyle='#fff';cx.beginPath();cx.arc(p[0],p[1],H*.017,0,7);cx.fill()}
+ cx.save();cx.translate(X,Y);cx.fillStyle='#ff7a3c';cx.shadowColor='#ff7a3c';cx.shadowBlur=18;cx.beginPath();cx.moveTo(0,-H*.04);cx.lineTo(H*.026,H*.022);cx.lineTo(0,H*.008);cx.lineTo(-H*.026,H*.022);cx.fill();cx.restore()}
+addEventListener('resize',()=>{if($('#hud').style.display==='block'){size();draw()}});
+
+/* رویدادها */
+$('#go').onclick=()=>startNav(false);$('#simB').onclick=()=>startNav(true);$('#xB').onclick=stopNav;
+$('#hB').onclick=()=>hud(true);$('#hX').onclick=()=>hud(false);$('#mir').onclick=()=>{const f=$('#hudView').classList.toggle('flip');$('#mir').textContent=f?'آینه ✓':'آینه'};
 </script>
 </body>
 </html>
