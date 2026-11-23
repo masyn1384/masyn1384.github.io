@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#06111d">
+<meta name="description" content="نقشه مسیریابی HUD رایگان">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<title>HUD Map</title>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap');
+:root{--cyan:#42dcff;--bg:#06111d;--panel:rgba(5,18,31,.91);--line:#8edfff35;--muted:#a6bdce}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:#effaff;font-family:Vazirmatn,Tahoma,sans-serif}
+button,input{font:inherit;color:inherit}button{border:0;cursor:pointer}#map{position:absolute;inset:0}
+.top{position:absolute;z-index:4;top:calc(env(safe-area-inset-top) + 12px);left:12px;right:12px;max-width:620px;margin:auto}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:19px;backdrop-filter:blur(15px);box-shadow:0 12px 36px #0008}
+.search{padding:10px 12px}.row{display:flex;align-items:center;gap:9px}.row input{min-width:0;flex:1;background:transparent;border:0;outline:0;padding:9px 3px;font-size:16px}.row input::placeholder{color:#91a9bb}.dot{width:10px;height:10px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);flex:none}
+.sep{height:1px;background:#ffffff18;margin:4px 2px}.btn{background:#ffffff10;border:1px solid #ffffff20;border-radius:13px;padding:10px 13px;font-weight:700}.primary{background:linear-gradient(120deg,#61e6ff,#168dff);color:#041421}
+.actions{display:flex;gap:8px;margin-top:9px}.actions button{flex:1}
+#results{max-height:28vh;overflow:auto}#results:empty{display:none}.result{padding:10px;border-top:1px solid #ffffff18;font-size:13px}.result small{display:block;color:var(--muted)}
+.bottom{position:absolute;z-index:4;bottom:calc(env(safe-area-inset-bottom) + 12px);left:12px;right:12px;max-width:620px;margin:auto;padding:13px 15px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+#summary{font-weight:700;color:var(--cyan);font-size:18px}#sub{font-size:12px;color:var(--muted);margin-top:2px}.bottom-actions{display:flex;gap:7px}.bottom-actions button{min-width:44px}
+#toast{position:absolute;z-index:10;top:90px;left:50%;transform:translateX(-50%);padding:9px 14px;border-radius:12px;background:#061827ed;border:1px solid var(--line);font-size:12px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
+#hudTag{display:none;position:absolute;z-index:3;top:12px;left:50%;transform:translateX(-50%);padding:8px 14px;border-radius:12px;background:#03101dcc;border:1px solid #42dcff55;color:var(--cyan);font-size:12px;letter-spacing:.5px}
+body.hud .top,body.hud .bottom{opacity:.15;transition:opacity .3s}body.hud .top:active,body.hud .bottom:active{opacity:1}body.hud #hudTag{display:block}
+body.hud #map{filter:contrast(1.08) saturate(.8)}
+body.mirror #map{transform:scaleX(-1)}
+.marker{width:18px;height:18px;border-radius:50%;background:var(--cyan);border:3px solid white;box-shadow:0 0 0 7px #42dcff38,0 0 18px var(--cyan)}
+.dest{width:20px;height:20px;border-radius:50%;background:#fff;border:5px solid #42dcff;box-shadow:0 0 16px var(--cyan)}
+.maplibregl-ctrl-attrib{font-size:9px!important}
+@media(max-width:520px){.bottom{align-items:flex-start}.bottom-actions{flex-wrap:wrap;justify-content:flex-end}.bottom-actions button{padding:9px}}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="hudTag">HUD MAP · MIRROR READY</div>
+<div class="top">
+ <div class="panel search">
+  <div class="row"><span class="dot"></span><input id="destination" placeholder="مقصد را جستجو کن..." autocomplete="off"><button class="btn" id="searchBtn">جستجو</button></div>
+  <div id="results"></div>
+  <div class="actions">
+   <button class="btn" id="gpsBtn">موقعیت من</button>
+   <button class="btn primary" id="routeBtn">نمایش مسیر</button>
+   <button class="btn" id="clearBtn">پاک‌کردن</button>
+  </div>
+ </div>
+</div>
+<div class="bottom panel">
+ <div><div id="summary">آماده</div><div id="sub">مقصد را جستجو کن یا روی نقشه لمس کن</div></div>
+ <div class="bottom-actions">
+  <button class="btn" id="followBtn">◎</button>
+  <button class="btn" id="mirrorBtn">⇋ آینه</button>
+  <button class="btn primary" id="hudBtn">HUD تمام‌صفحه</button>
+ </div>
+</div>
+<div id="toast"></div>
+<script>
+const $=s=>document.querySelector(s);
+let map, me=null, dest=null, meMarker=null, destMarker=null, routeLine=null, watchId=null, nav=false, lastReroute=0, offCount=0, heading=0;
+const toast=t=>{const e=$('#toast');e.textContent=t;e.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.opacity=0,2600)};
+const fmtDist=m=>m<1000?Math.round(m)+' متر':(m/1000).toFixed(1)+' کیلومتر';
+const fmtTime=s=>{let m=Math.max(1,Math.round(s/60));return m<60?m+' دقیقه':Math.floor(m/60)+' ساعت و '+m%60+' دقیقه'};
+const hav=(a,b)=>{const r=Math.PI/180,d1=(b[1]-a[1])*r,d2=(b[0]-a[0])*r,x=Math.sin(d1/2)**2+Math.cos(a[1]*r)*Math.cos(b[1]*r)*Math.sin(d2/2)**2;return 6371000*2*Math.asin(Math.sqrt(x))};
+const bearing=(a,b)=>{let r=Math.PI/180,dl=(b[0]-a[0])*r,y=Math.sin(dl)*Math.cos(b[1]*r),x=Math.cos(a[1]*r)*Math.sin(b[1]*r)-Math.sin(a[1]*r)*Math.cos(b[1]*r)*Math.cos(dl);return (Math.atan2(y,x)/r+360)%360};
+map=new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/liberty',center:[51.389,35.6892],zoom:12,attributionControl:true});
+map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');
+map.on('load',()=>toast('نقشه آماده است'));
+function marker(cls,p){const el=document.createElement('div');el.className=cls;return new maplibregl.Marker({element:el}).setLngLat(p).addTo(map)}
+function setMe(p){me=p;if(!meMarker)meMarker=marker('marker',p);else meMarker.setLngLat(p)}
+function setDest(p,label){dest=p;if(destMarker)destMarker.remove();destMarker=marker('dest',p);if(label)$('#destination').value=label;calcRoute()}
+function clearRoute(){nav=false;if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null}if(routeLine&&map.getSource('route'))map.removeLayer('route-line'),map.removeSource('route');routeLine=null;dest=null;if(destMarker){destMarker.remove();destMarker=null}$('#summary').textContent='آماده';$('#sub').textContent='مقصد را جستجو کن یا روی نقشه لمس کن'}
+map.on('click',e=>{setDest([e.lngLat.lng,e.lngLat.lat],'مقصد انتخاب‌شده روی نقشه')});
+async function searchPlace(){const q=$('#destination').value.trim();if(q.length<3)return toast('نام مقصد را کامل‌تر بنویس');try{toast('در حال جستجوی مقصد…');const u='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q='+encodeURIComponent(q);const r=await fetch(u,{headers:{'Accept-Language':'fa'}});if(!r.ok)throw Error('search');const a=await r.json(),box=$('#results');box.innerHTML='';if(!a.length){toast('نتیجه‌ای پیدا نشد');return}a.forEach(x=>{const d=document.createElement('div');d.className='result';const n=document.createElement('div');n.textContent=x.display_name;d.appendChild(n);d.onclick=()=>{box.innerHTML='';const p=[+x.lon,+x.lat];map.flyTo({center:p,zoom:15});setDest(p,x.name||x.display_name.split(',')[0])};box.appendChild(d)})}catch(e){toast('جستجو فعلاً در دسترس نیست')}}
+async function getPosition(center=true){if(!navigator.geolocation){toast('GPS در این مرورگر در دسترس نیست');return false}toast('در حال دریافت موقعیت GPS…');return new Promise(resolve=>navigator.geolocation.getCurrentPosition(p=>{setMe([p.coords.longitude,p.coords.latitude]);if(center)map.flyTo({center:me,zoom:16});toast('موقعیت پیدا شد');resolve(true)},e=>{toast(e.code===1?'اجازه GPS داده نشد':'موقعیت GPS دریافت نشد');resolve(false)},{enableHighAccuracy:true,timeout:15000,maximumAge:3000}))}
+async function calcRoute(){if(!dest)return;if(!me){await getPosition(false);if(!me)return}try{toast('در حال محاسبه مسیر…');const url=`https://router.project-osrm.org/route/v1/driving/${me[0]},${me[1]};${dest[0]},${dest[1]}?overview=full&geometries=geojson`;const r=await fetch(url);if(!r.ok)throw Error('route');const j=await r.json();if(j.code!=='Ok'||!j.routes?.length)throw Error('no route');const rt=j.routes[0];routeLine=rt.geometry.coordinates;if(map.getSource('route')){map.getSource('route').setData({type:'Feature',geometry:rt.geometry})}else{map.addSource('route',{type:'geojson',data:{type:'Feature',geometry:rt.geometry}});map.addLayer({id:'route-line',type:'line',source:'route',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'#28cfff','line-width':7,'line-opacity':.95,'line-blur':.25}})}$('#summary').textContent=fmtTime(rt.duration);$('#sub').textContent=fmtDist(rt.distance)+' تا مقصد · مسیر با خط فیروزه‌ای';const b=new maplibregl.LngLatBounds();rt.geometry.coordinates.forEach(p=>b.extend(p));map.fitBounds(b,{padding:{top:150,bottom:150,left:45,right:45},maxZoom:16});toast('مسیر آماده شد')}catch(e){console.error(e);toast('مسیر‌یابی در دسترس نیست؛ سرور عمومی ممکن است موقتاً محدود باشد')}}
+function nearestDistance(p,line){let best=1e20;for(let i=0;i<line.length-1;i++){const a=line[i],b=line[i+1],lat=p[1]*Math.PI/180,kx=111320*Math.cos(lat),ky=110540,ax=(a[0]-p[0])*kx,ay=(a[1]-p[1])*ky,bx=(b[0]-p[0])*kx,by=(b[1]-p[1])*ky,dx=bx-ax,dy=by-ay,t=Math.max(0,Math.min(1,-(ax*dx+ay*dy)/(dx*dx+dy*dy||1))),d=Math.hypot(ax+t*dx,ay+t*dy);best=Math.min(best,d)}return best}
+function startWatch(){if(!navigator.geolocation)return toast('GPS در دسترس نیست');if(watchId!==null)navigator.geolocation.clearWatch(watchId);nav=true;toast('مسیریابی زنده شروع شد');watchId=navigator.geolocation.watchPosition(async p=>{const c=[p.coords.longitude,p.coords.latitude];setMe(c);if(p.coords.heading!==null&&p.coords.speed>1)heading=p.coords.heading;if(nav){map.easeTo({center:c,zoom:16,bearing:heading,duration:650});if(routeLine&&nearestDistance(c,routeLine)>65){offCount++}else offCount=0;if(offCount>=3&&Date.now()-lastReroute>12000){offCount=0;lastReroute=Date.now();me=c;await calcRoute()}}},e=>toast('سیگنال GPS ضعیف یا قطع شد'),{enableHighAccuracy:true,maximumAge:1500,timeout:15000})}
+$('#searchBtn').onclick=searchPlace;$('#destination').addEventListener('keydown',e=>{if(e.key==='Enter')searchPlace()});
+$('#gpsBtn').onclick=()=>getPosition(true);$('#routeBtn').onclick=async()=>{if(!dest)return toast('اول مقصد را انتخاب کن');if(!me){const ok=await getPosition(false);if(!ok)return}await calcRoute()};
+$('#clearBtn').onclick=clearRoute;$('#followBtn').onclick=()=>{if(me)map.easeTo({center:me,zoom:16,bearing:heading,duration:500});else getPosition(true)};
+$('#mirrorBtn').onclick=()=>document.body.classList.toggle('mirror');
+$('#hudBtn').onclick=async()=>{document.body.classList.toggle('hud');if(document.body.classList.contains('hud')){if(dest&&!me){const ok=await getPosition(false);if(!ok){document.body.classList.remove('hud');return}await calcRoute()}if(dest&&!nav)startWatch();try{await document.documentElement.requestFullscreen();if(screen.orientation?.lock)await screen.orientation.lock('landscape')}catch(e){}}else{try{if(document.fullscreenElement)await document.exitFullscreen();screen.orientation?.unlock?.()}catch(e){}}setTimeout(()=>map.resize(),150)};
+document.addEventListener('fullscreenchange',()=>setTimeout(()=>map.resize(),150));
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+</script>
+</body>
+</html>
