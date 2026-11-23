@@ -122,6 +122,35 @@ body.editing .w{outline:2px dashed #ffffff66;cursor:grab}body.editing .w.sel{out
 #net{position:fixed;z-index:70;left:50%;top:calc(env(safe-area-inset-top,0px) + 2px);transform:translateX(-50%);padding:5px 14px;border-radius:0 0 12px 12px;font-size:11px;color:#ffb36b;display:none;white-space:nowrap}#net.show{display:block}
 @media (max-height:480px) and (orientation:landscape){#fabs{bottom:90px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- v3 ---------- */
+.w.hide{display:none!important}
+.w[data-k=speed] .gz,.w[data-k=speed] .gb,.ck{display:none}
+.w[data-k=speed]:not([data-st=ring]) .rg{display:none}
+.gz{position:absolute;inset:6%;width:88%;height:88%}
+.w[data-k=speed][data-st=needle] .gn,.w[data-k=speed][data-st=seg] .gs{display:block}
+.w[data-k=speed][data-st=bar] .gb{display:block}
+.w[data-k=speed][data-st=num],.w[data-k=speed][data-st=bar]{width:auto;aspect-ratio:auto;border-radius:2.6vmin;padding:1.6vmin 3vmin}
+.w[data-k=speed][data-st=bar]{display:flex;flex-direction:column;align-items:stretch;min-width:clamp(150px,40vmin,280px)}
+.w[data-k=speed][data-st=needle] #hSw{transform:translateY(34%)}
+.w[data-k=speed][data-st=needle] #hS{font-size:clamp(22px,6.5vmin,46px)}
+.gs line{stroke:var(--b)}.w.warn .gs line{stroke:#ff5a6a}
+#gnN{transition:transform .45s cubic-bezier(.3,1.3,.5,1);transform-origin:50px 50px}
+.gb{height:1.4vmin;min-height:6px;border-radius:9px;background:#ffffff1f;margin-top:1vmin;overflow:hidden}
+.gb i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--b),#fff);transition:width .4s}.w.warn .gb i{background:#ff5a6a}
+.w[data-k=clock][data-st=dig] .ckd,.w[data-k=clock][data-st=dig2] .ckd{display:block;text-align:center}
+.w[data-k=clock][data-st=ana] .cka,.w[data-k=clock][data-st=ana2] .cka,.w[data-k=clock][data-st=ring] .ckr{display:block;width:100%;height:100%}
+.w[data-k=clock]:is([data-st=ana],[data-st=ana2],[data-st=ring]){width:clamp(90px,22vmin,150px);aspect-ratio:1;border-radius:50%;padding:1vmin}
+#ckDt{display:none;font-size:clamp(11px,2.8vmin,17px);color:#cfe3f2}.w[data-st=dig2] #ckDt{display:block}
+.w[data-st=ana2] .nums,.w[data-st=ana2] .mn{display:none}
+.w[data-k=tarrow]{display:none;background:none;border:0;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;color:var(--tc,#ff2b3d)}
+.w[data-k=tarrow].show,body.editing .w[data-k=tarrow]{display:block}
+#taI svg{width:clamp(90px,26vmin,190px);display:block;overflow:visible}
+.w[data-k=tarrow][data-d=l] #taI{transform:scaleX(-1)}
+#taI path{fill:none;stroke:currentColor;stroke-width:7;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 6px currentColor);animation:tch 1.3s ease-in-out infinite}
+#taI path:nth-child(2){animation-delay:.22s}#taI path:nth-child(3){animation-delay:.44s}
+@keyframes tch{0%,100%{opacity:.1}35%{opacity:1}70%{opacity:.1}}
+#taD{text-align:center;font-weight:800;font-size:clamp(14px,4vmin,26px);margin-top:.6vmin;text-shadow:0 0 10px currentColor}
 </style>
 </head>
 <body>
@@ -164,13 +193,13 @@ let map,hudMap,meMk,orgMk,dstMk,route=null,origin=null,dst=null,gps=null,cp=null
 let navOn=false,hudOpen=false,wid=null,muted=false,idx=0,off=0,spoken={},hd=0,spd=0,wake=null,active='d',rerouting=false,follow=true;
 
 /* ---------- Settings ---------- */
-const WLIST={turn:'مانور بعدی',speed:'سرعت',clock:'ساعت',eta:'زمان و مسافت',street:'نام خیابان',compass:'قطب‌نما'};
-const DEF={rc:'#19bfff',wc:'#19bfff',rw:9,rg:.4,st:.35,p:50,z:18,cy:72,car:'arrow',u:'kmh',h24:true,lim:0,mirror:false,
- w:{turn:{on:1,x:16,y:20,s:1,o:1,b:1},speed:{on:1,x:87,y:26,s:1,o:1,b:1},clock:{on:1,x:50,y:9,s:1,o:1,b:1},eta:{on:1,x:17,y:86,s:1,o:1,b:1},street:{on:1,x:50,y:92,s:1,o:.9,b:1},compass:{on:1,x:93,y:84,s:.8,o:1,b:1}}};
+const WLIST={turn:'مانور بعدی',speed:'سرعت',clock:'ساعت',eta:'زمان و مسافت',street:'نام خیابان',tarrow:'فلش گردش',compass:'قطب‌نما'};
+const DEF={rc:'#19bfff',wc:'#19bfff',rw:9,rg:.4,st:.35,p:50,z:18,cy:72,car:'arrow',u:'kmh',h24:true,lim:0,mirror:false,sp:'ring',ck:'dig',la:70,ta:250,tc:'#ff2b3d',
+ w:{turn:{on:1,x:16,y:20,s:1,o:1,b:1},speed:{on:1,x:87,y:26,s:1,o:1,b:1},clock:{on:1,x:50,y:9,s:1,o:1,b:1},eta:{on:1,x:17,y:86,s:1,o:1,b:1},street:{on:1,x:50,y:92,s:1,o:.9,b:1},compass:{on:1,x:93,y:84,s:.8,o:1,b:1},tarrow:{on:1,x:50,y:42,s:1,o:1,b:0}}};
 let cfg=JSON.parse(JSON.stringify(DEF));
 try{const s=JSON.parse(localStorage.getItem('hudcfg2')||'null');if(s){Object.assign(cfg,s);cfg.w=Object.assign({},DEF.w,s.w||{});for(const k in DEF.w)cfg.w[k]=Object.assign({},DEF.w[k],cfg.w[k])}}catch(e){}
 const save=()=>{try{localStorage.setItem('hudcfg2',JSON.stringify(cfg))}catch(e){}};
-const F=[['rc','رنگ مسیر','color'],['wc','رنگ ویجت‌ها','color'],['rw','ضخامت مسیر','range',3,18,1],['rg','درخشش مسیر','range',0,1,.05],['st','پررنگی خیابان‌های اطراف','range',0,1,.05],['p','زاویهٔ دوربین','range',0,70,1],['z','زوم نقشه','range',15,19.5,.1],['cy','جای ماشین روی صفحه','range',45,92,1],['car','نشانگر ماشین','sel',[['arrow','پیکان'],['dot','نقطه']]],['u','واحد سرعت','sel',[['kmh','km/h'],['mph','mph']]],['h24','ساعت ۲۴ ساعته','chk'],['lim','هشدار سرعت (۰ = خاموش)','range',0,200,5]];
+const F=[['rc','رنگ مسیر','color'],['wc','رنگ ویجت‌ها','color'],['rw','ضخامت مسیر','range',3,18,1],['rg','درخشش مسیر','range',0,1,.05],['st','پررنگی خیابان‌های اطراف','range',0,1,.05],['p','زاویهٔ دوربین','range',0,70,1],['z','زوم نقشه','range',15,19.5,.1],['cy','جای ماشین روی صفحه','range',45,92,1],['car','نشانگر ماشین','sel',[['arrow','پیکان'],['dot','نقطه']]],['sp','مدل نمایش سرعت','sel',[['ring','عددی + حلقه'],['num','فقط عدد'],['needle','عقربه‌ای'],['seg','نواری قطعه‌ای'],['bar','خطی افقی']]],['ck','مدل ساعت','sel',[['dig','دیجیتال ساده'],['dig2','دیجیتال + تاریخ'],['ana','عقربه‌ای کلاسیک'],['ana2','عقربه‌ای مینیمال'],['ring','دیجیتال با حلقهٔ ثانیه']]],['la','فاصلهٔ نگاه به جلو (متر)','range',20,200,5],['ta','فاصلهٔ نمایش فلش گردش (متر)','range',50,600,10],['tc','رنگ فلش گردش','color'],['u','واحد سرعت','sel',[['kmh','km/h'],['mph','mph']]],['h24','ساعت ۲۴ ساعته','chk'],['lim','هشدار سرعت (۰ = خاموش)','range',0,200,5]];
 
 /* ---------- Helpers ---------- */
 const hav=(a,b)=>{const x=Math.sin((b[1]-a[1])*rad/2)**2+Math.cos(a[1]*rad)*Math.cos(b[1]*rad)*Math.sin((b[0]-a[0])*rad/2)**2;return 2*R*Math.asin(Math.sqrt(x))};
@@ -266,8 +295,8 @@ function fix(raw,sp,h,acc,ts){if(!route||!navOn)return;if(acc&&acc>120){weakGps(
  const on=m.d<=tol;
  if(!on){if(++off>=4&&Date.now()-lastRR>10000){off=0;lastRR=Date.now();reroute(raw)}}else{off=0;idx=m.i}
  const along=cum[m.i]+m.t*(cum[m.i+1]-cum[m.i]),p=on?m.pt:raw;cp=p;
- let j=m.i+1;while(j<pts.length-1&&cum[j]-along<Math.max(25,spd/3.6*3))j++;
- const th=on?brg(p,pts[j]):((h!=null&&!isNaN(h)&&spd>3)?h:hd);let df=((th-hd+540)%360)-180;hd=(hd+df*.5+360)%360;
+ let j=m.i+1;while(j<pts.length-1&&cum[j]-along<Math.max(cfg.la,spd/3.6*4))j++;
+ const th=on?brg(p,pts[j]):((h!=null&&!isNaN(h)&&spd>3)?h:hd);let df=((th-hd+540)%360)-180;hd=(hd+df*.4+360)%360;
  const rem=Math.max(0,route.total-along);
  if(rem<25){toast('به مقصد رسیدید');say('به مقصد رسیدید');stopNav();return}
  const nx=route.steps.find(s=>s.al>along+8)||route.steps[route.steps.length-1],dn=Math.max(0,nx.al-along),sec=route.dur*rem/Math.max(1,route.total);
@@ -276,21 +305,33 @@ function fix(raw,sp,h,acc,ts){if(!route||!navOn)return;if(acc&&acc>120){weakGps(
  $('#eta').textContent=fm(sec);$('#rem').textContent=fd(rem)+' · رسیدن '+arr;
  $('#hI').innerHTML=ic;$('#hD').textContent=fd(dn);$('#hSt').textContent=nx.name||txt;
  $('#hEta').innerHTML='تا مقصد <b>'+fm(sec)+'</b>';$('#hRem').innerHTML='<b>'+fd(rem)+'</b> · '+arr;
- const sv=cfg.u==='mph'?spd*.621:spd,lim=cfg.u==='mph'?cfg.lim*.621:cfg.lim;
- $('#hS').textContent=fa(Math.round(sv));$('#ring').setAttribute('stroke-dasharray',(Math.min(sv,cfg.u==='mph'?100:160)/(cfg.u==='mph'?100:160)*202)+' 270');
- $('.w[data-k=speed]').classList.toggle('warn',cfg.lim>0&&sv>lim);
+ updSpeed();turnArrow(nx,dn);
  [[500,'۵۰۰'],[150,'۱۵۰']].forEach(([mm,l])=>{const k=nx.i+'_'+mm;if(dn<mm&&!spoken[k]){spoken[k]=1;say('تا '+l+' متر دیگر، '+txt)}});
  const rest=[p].concat(pts.slice(m.i+1)),gj={type:'Feature',geometry:{type:'LineString',coordinates:rest}};
  try{const s=hudMap&&hudMap.getSource('hudroute');s&&s.setData(gj)}catch(e){}try{const s=map.getSource('mainroute');s&&s.setData(gj)}catch(e){}
  if(hudOpen&&hudMap)hcam(p,900);else{showMe(p);if(follow)map.easeTo({center:p,bearing:hd,zoom:17,pitch:58,duration:900,easing:t=>t,...camM()})}}
-function stopNav(){navOn=false;follow=true;$('#recenterBtn').style.display='none';if(wid!=null){navigator.geolocation.clearWatch(wid);wid=null}if(wake){wake.release().catch(()=>{});wake=null}if(window.speechSynthesis)speechSynthesis.cancel();
+function stopNav(){navOn=false;try{$('.w[data-k=tarrow]').classList.remove('show')}catch(e){}follow=true;$('#recenterBtn').style.display='none';if(wid!=null){navigator.geolocation.clearWatch(wid);wid=null}if(wake){wake.release().catch(()=>{});wake=null}if(window.speechSynthesis)speechSynthesis.cancel();
  hud(false);document.body.classList.remove('nav');if(meMk)meMk.getElement().classList.remove('nav');
  if(route)whenReady(map,()=>drawRoute(map,'main',route.pts));map.easeTo({pitch:0,bearing:0,zoom:14,duration:600});if(route)$('#sheet').classList.add('show');saveState()}
 
 /* ---------- HUD widgets ---------- */
 const RING='<svg class="rg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="43" fill="none" style="stroke:var(--b)" stroke-opacity=".18" stroke-width="5" stroke-dasharray="202 270" stroke-linecap="round"/><circle id="ring" cx="50" cy="50" r="43" fill="none" style="stroke:var(--b)" stroke-width="5" stroke-dasharray="0 270" stroke-linecap="round"/></svg>';
-const WH={turn:'<div class="tl"><span id="hI"></span><span id="hD">—</span></div>',speed:RING+'<div><div id="hS">۰</div><div class="unit" id="hU">km/h</div></div><button class="ed" id="wEdBtn">✎</button>',clock:'<span id="hClk">--:--</span>',eta:'<div id="hEta">—</div><div id="hRem">—</div>',street:'<div id="hSt">—</div>',compass:CMP};
+const TA='<div id="taI"><svg viewBox="0 0 90 40"><path d="M10 4l16 16-16 16"/><path d="M36 4l16 16-16 16"/><path d="M62 4l16 16-16 16"/></svg></div><div id="taD"></div>';
+const WH={turn:'<div class="tl"><span id="hI"></span><span id="hD">—</span></div>',speed:RING+'<svg class="gz gn" viewBox="0 0 100 100"><g id="gnT"></g><g id="gnN"><path d="M50 52L48.3 50 50 13 51.7 50z" fill="#ff4d5e"/><circle cx="50" cy="50" r="3.2" fill="#eafaff"/></g></svg><svg class="gz gs" viewBox="0 0 100 100"><g id="gsT"></g></svg><div id="hSw" style="text-align:center"><div id="hS">۰</div><div class="unit" id="hU">km/h</div></div><div class="gb"><i id="gbf"></i></div><button class="ed" id="wEdBtn">✎</button>',clock:'<div class="ck ckd"><div id="hClk">--:--</div><div id="ckDt"></div></div><svg class="ck cka" viewBox="0 0 100 100"><g id="ckT"></g><line id="ckh" x1="50" y1="50" x2="50" y2="28" stroke="#eafaff" stroke-width="3.4" stroke-linecap="round"/><line id="ckm" x1="50" y1="50" x2="50" y2="15" stroke="#eafaff" stroke-width="2.3" stroke-linecap="round"/><line id="cks" x1="50" y1="56" x2="50" y2="11" style="stroke:var(--b)" stroke-width="1.1" stroke-linecap="round"/><circle cx="50" cy="50" r="2.6" style="fill:var(--b)"/></svg><svg class="ck ckr" viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" style="stroke:var(--b)" stroke-opacity=".2" stroke-width="5"/><circle id="ckP" cx="50" cy="50" r="44" fill="none" style="stroke:var(--b)" stroke-width="5" stroke-linecap="round" stroke-dasharray="0 300" transform="rotate(-90 50 50)"/><text id="ckRT" x="50" y="58" text-anchor="middle" font-size="22" font-weight="700" fill="#f1fbff" font-family="Vazirmatn,Arial">--:--</text></svg>',eta:'<div id="hEta">—</div><div id="hRem">—</div>',street:'<div id="hSt">—</div>',compass:CMP,tarrow:TA};
 const wl=$('#wl');for(const k in WH){const d=document.createElement('div');d.className='w';d.dataset.k=k;d.innerHTML=WH[k];wl.appendChild(d)}
+const PT=(r,a)=>[50+r*Math.sin(a*rad),50-r*Math.cos(a*rad)],LN=(p,q,x)=>'<line x1="'+p[0]+'" y1="'+p[1]+'" x2="'+q[0]+'" y2="'+q[1]+'" '+x+'/>';
+function buildGauge(){const mx=cfg.u==='mph'?100:160;let t='',g='';
+ for(let v=0;v<=mx;v+=10){const a=-135+v/mx*270,M=v%20===0;t+=LN(PT(M?39:42,a),PT(46,a),'stroke="#9eb7ca" stroke-width="'+(M?1.6:.8)+'"');if(M){const q=PT(31,a);t+='<text x="'+q[0]+'" y="'+(q[1]+2.4)+'" text-anchor="middle" font-size="6.5" fill="#dcefff" font-family="Vazirmatn,Arial">'+fa(v)+'</text>'}}
+ for(let i=0;i<15;i++){const a=-135+(i+.5)*18;g+=LN(PT(35,a),PT(46,a),'stroke-width="5" stroke-linecap="round"')}
+ $('#gnT').innerHTML=t;$('#gsT').innerHTML=g}
+(function(){let t='';for(let i=0;i<60;i++){const M=i%5===0;t+=LN(PT(M?38:42,i*6),PT(46,i*6),'class="'+(M?'':'mn')+'" stroke="#9eb7ca" stroke-width="'+(M?1.8:.7)+'"')}
+ for(let h=1;h<=12;h++){const q=PT(30,h*30);t+='<text class="nums" x="'+q[0]+'" y="'+(q[1]+2.8)+'" text-anchor="middle" font-size="8" fill="#dcefff" font-family="Vazirmatn,Arial">'+fa(h)+'</text>'}
+ $('#ckT').innerHTML=t})();
+function updSpeed(){const m=cfg.u==='mph',sv=m?spd*.621:spd,mx=m?100:160,r=clamp(sv/mx,0,1),lim=m?cfg.lim*.621:cfg.lim,n=Math.round(r*15);
+ $('#hS').textContent=fa(Math.round(sv));$('#ring').setAttribute('stroke-dasharray',r*202+' 270');$('#gnN').style.transform='rotate('+(-135+r*270)+'deg)';$('#gbf').style.width=r*100+'%';
+ document.querySelectorAll('#gsT line').forEach((l,i)=>l.style.strokeOpacity=i<n?1:.18);$('.w[data-k=speed]').classList.toggle('warn',cfg.lim>0&&sv>lim)}
+function turnArrow(nx,dn){const el=$('.w[data-k=tarrow]'),m=(nx.modifier||'').toLowerCase(),d=/slight/.test(m)?0:(m==='uturn'||/left/.test(m))?-1:/right/.test(m)?1:0;
+ el.classList.toggle('show',!!(d&&nx.type!=='arrive'&&dn<cfg.ta));if(d)el.dataset.d=d<0?'l':'r';$('#taD').textContent=fd(dn)}
 let sel='speed',edit=false;
 function place(k){const w=cfg.w[k],el=wl.querySelector('[data-k='+k+']');el.classList.toggle('hide',!w.on);el.style.left=w.x+'%';el.style.top=w.y+'%';el.style.opacity=w.o;el.style.setProperty('--ba',w.b);el.style.transform='translate(-50%,-50%) scale('+w.s+')'}
 function hl(){document.querySelectorAll('.w').forEach(e=>e.classList.toggle('sel',e.dataset.k===sel))}
@@ -301,7 +342,7 @@ function renderW(){const c=$('#wChips');c.innerHTML='';for(const k in WLIST){con
  d.querySelectorAll('input[data-p]').forEach(i=>i.oninput=()=>{w[i.dataset.p]=+i.value;place(k);save()});
  c.appendChild(d)}hl()}
 $('#wReset').onclick=()=>{cfg.w=JSON.parse(JSON.stringify(DEF.w));for(const k in WH)place(k);renderW();save()};
-function setEdit(on){edit=on;document.body.classList.toggle('editing',on);$('#hEdit').classList.toggle('on',on);$('#pEdit').classList.toggle('show',on);if(on){$('#pSet').classList.remove('show');renderW()}wake_bar()}
+function setEdit(on,q){edit=on;document.body.classList.toggle('editing',on);$('#hEdit').classList.toggle('on',on);$('#pEdit').classList.toggle('show',on);if(on){$('#pSet').classList.remove('show');renderW()}q||wake_bar()}
 $('#hEdit').onclick=()=>setEdit(!edit);$('#wEdBtn').onclick=e=>{e.stopPropagation();setEdit(true)};
 /* drag + pinch; coordinates are converted when the HUD is rotated for portrait phones */
 const P=new Map(),rot=()=>innerHeight>innerWidth;
@@ -322,15 +363,16 @@ $('#allReset').onclick=()=>{cfg=JSON.parse(JSON.stringify(DEF));save();syncForm(
 $('#hSet').onclick=()=>{$('#pSet').classList.toggle('show');if(edit)setEdit(false);wake_bar()};
 function hudOff(){return hudMap?hudMap.getContainer().clientHeight*(cfg.cy/100-.5):0}
 function hcam(c,dur){try{hudMap.easeTo({center:c,bearing:hd,zoom:cfg.z,pitch:cfg.p,duration:dur,easing:t=>t,offset:[0,hudOff()]})}catch(e){}}
-function apply(){const h=$('#hud');h.style.setProperty('--b',cfg.wc);h.style.setProperty('--rc',cfg.rc);
+function apply(){const h=$('#hud');h.style.setProperty('--b',cfg.wc);h.style.setProperty('--rc',cfg.rc);h.style.setProperty('--tc',cfg.tc);$('.w[data-k=speed]').dataset.st=cfg.sp;$('.w[data-k=clock]').dataset.st=cfg.ck;buildGauge();updSpeed();
  $('#car').style.top=cfg.cy+'%';$('#car').innerHTML=cfg.car==='dot'?'<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="12" fill="'+cfg.rc+'" stroke="#e6f8ff" stroke-width="3"/></svg>':'<svg viewBox="0 0 48 48"><path d="M24 3l17 40-17-10L7 43z" fill="'+cfg.rc+'" stroke="#e6f8ff" stroke-width="2" stroke-linejoin="round"/></svg>';
  $('#hU').textContent=cfg.u==='mph'?'mph':'km/h';$('#hudView').classList.toggle('mirror',cfg.mirror);$('#hMir').classList.toggle('on',cfg.mirror);
  styleRoute(map,'main');styleRoute(hudMap,'hud');if(hudMap){dimHud();hcam(cp||(route&&route.pts[0])||CFG.TEHRAN,300)}tick()}
-function tick(){$('#hClk').textContent=new Date().toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit',hour12:!cfg.h24})}setInterval(tick,5000);
+function tick(){const d=new Date(),t=d.toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit',hour12:!cfg.h24}),sc=d.getSeconds(),mi=d.getMinutes()+sc/60,hr=d.getHours()%12+mi/60,Q=(i,a)=>$(i).setAttribute('transform','rotate('+a+' 50 50)');
+ $('#hClk').textContent=t;$('#ckRT').textContent=t;$('#ckDt').textContent=d.toLocaleDateString('fa-IR',{weekday:'long',day:'numeric',month:'long'});Q('#ckh',hr*30);Q('#ckm',mi*6);Q('#cks',sc*6);$('#ckP').setAttribute('stroke-dasharray',(sc/60*276.5)+' 300')}setInterval(tick,1000);
 
 /* ---------- HUD open / close ---------- */
-let barT;function wake_bar(){const b=$('#hbar');b.classList.remove('idle');clearTimeout(barT);if(!edit&&!$('#pSet').classList.contains('show'))barT=setTimeout(()=>b.classList.add('idle'),5000)}
-$('#hud').addEventListener('pointerdown',e=>{if(!e.target.closest('.panel')&&!e.target.closest('.w'))wake_bar()});
+let barT;function wake_bar(){const b=$('#hbar');b.classList.remove('idle');clearTimeout(barT);barT=setTimeout(()=>{if(edit)setEdit(false,1);$('#pSet').classList.remove('show');b.classList.add('idle')},7000)}
+['pointerdown','pointermove','touchmove','wheel','input','scroll'].forEach(t=>$('#hud').addEventListener(t,wake_bar,{passive:true,capture:true}));
 function hudFit(){const h=$('#hud');if(rot()){h.style.inset='auto';h.style.top='0';h.style.left='0';h.style.width=innerHeight+'px';h.style.height=innerWidth+'px';h.style.transformOrigin='0 0';h.style.transform='translateX('+innerWidth+'px) rotate(90deg)'}
  else{h.style.inset='0';h.style.width=h.style.height=h.style.transform=h.style.transformOrigin=h.style.top=h.style.left=''}
  setTimeout(()=>{if(hudMap){hudMap.resize();hcam(cp||route.pts[0],0)}},80)}
