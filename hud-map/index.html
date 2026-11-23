@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#060b13">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
@@ -101,6 +101,27 @@ body.editing .w{outline:2px dashed #ffffff66;cursor:grab}body.editing .w.sel{out
 .wrow{border-bottom:1px solid #ffffff12;padding:6px 0}.wrow.open{background:#19bfff0d;border-radius:10px;padding:6px 8px}.wh{display:flex;justify-content:space-between;align-items:center;font-weight:600;padding:4px 0}.wh input{width:20px;height:20px;accent-color:var(--b)}
 .pn-h{font-weight:700;margin-bottom:8px;color:var(--b)}
 .rs{display:block;width:100%;margin-top:10px;padding:10px;border-radius:12px;border:1px solid #ff536455;color:#ff8791}
+
+/* ---------- v2 design refinements ---------- */
+:root{--pn:linear-gradient(180deg,rgba(15,28,45,.92),rgba(8,15,26,.88))}
+.glass{box-shadow:0 14px 40px #0009,inset 0 1px 0 #ffffff14;border-color:rgba(140,200,255,.2)}
+#hdr{left:calc(env(safe-area-inset-left,0px) + 12px);right:calc(env(safe-area-inset-right,0px) + 12px)}
+.row input{font-size:16px}
+.ib,.controls button,#hbar button{min-height:44px;min-width:44px}
+#res div{min-height:48px;display:flex;flex-direction:column;justify-content:center}
+#res .none{color:var(--mut);text-align:center}
+#sheet::before{content:"";display:block;width:38px;height:4px;border-radius:4px;background:#ffffff30;margin:-6px auto 12px}
+.pbtn,.sbtn,.ib,.controls button,.fab{transition:transform .12s,filter .12s}
+.pbtn:active,.sbtn:active,.ib:active,.controls button:active,.fab:active{transform:scale(.95)}
+.pbtn{box-shadow:0 6px 20px #0a7cff55}
+:focus-visible{outline:2px solid var(--b);outline-offset:2px}
+#rec{display:flex;gap:6px;overflow-x:auto;padding:8px 12px 10px;scrollbar-width:none;border-top:1px solid #ffffff10}#rec:empty{display:none}
+#rec button{flex:none;padding:8px 13px;border-radius:12px;border:1px solid var(--ln);background:#ffffff0a;font-size:12px}#rec .z{color:#ff8791}
+#fabs{position:absolute;z-index:5;right:calc(env(safe-area-inset-right,0px) + 12px);bottom:calc(env(safe-area-inset-bottom,0px) + 206px);display:flex;flex-direction:column;gap:10px}
+.fab{width:46px;height:46px;border-radius:50%;font-size:19px;color:var(--b)}.fab.on{background:#19bfff30;border-color:var(--b)}
+#net{position:fixed;z-index:70;left:50%;top:calc(env(safe-area-inset-top,0px) + 2px);transform:translateX(-50%);padding:5px 14px;border-radius:0 0 12px 12px;font-size:11px;color:#ffb36b;display:none;white-space:nowrap}#net.show{display:block}
+@media (max-height:480px) and (orientation:landscape){#fabs{bottom:90px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
@@ -111,7 +132,7 @@ body.editing .w{outline:2px dashed #ffffff66;cursor:grab}body.editing .w.sel{out
    <div class="row" id="rowO"><span class="dot"></span><input id="qo" placeholder="مبدا: جستجو، نقشه یا GPS" autocomplete="off"><button class="ib" id="gpsO" title="موقعیت من">◎</button><button class="ib" id="clrO" style="color:#9fb6c8">×</button></div>
    <div class="sep"></div>
    <div class="row on" id="rowD"><span class="dot d"></span><input id="qd" placeholder="مقصد: جستجو یا انتخاب روی نقشه" autocomplete="off"><button class="ib" id="clrD" style="color:#9fb6c8">×</button></div>
-   <div id="res"></div>
+   <div id="res"></div><div id="rec"></div>
   </div>
   <div id="banner" class="glass"><span id="bI"></span><div><div id="bD">—</div><div id="bS">—</div></div></div>
  </div>
@@ -124,7 +145,7 @@ body.editing .w{outline:2px dashed #ffffff66;cursor:grab}body.editing .w.sel{out
 </div>
 <div id="bar" class="glass"><div><div id="eta">—</div><small id="rem">—</small></div><div class="controls"><button id="vB">🔊</button><button id="hB">HUD</button><button class="stop" id="xB">×</button></div></div>
 <button id="recenterBtn" class="glass">🧭 برگشت به رانندگی</button>
-<div id="toast"></div>
+<div id="fabs"><button id="trBtn" class="glass fab" aria-label="ترافیک">🚦</button><button id="stBtn" class="glass fab" aria-label="روز و شب">◐</button></div><div id="net" class="glass">آفلاین هستید؛ نقشه و مسیر جدید در دسترس نیست</div><div id="toast" role="status"></div>
 
 <div id="hud">
  <div id="hudView"><div id="hudMap"></div><div id="hudShade"></div><div id="car"></div><div id="wl"></div></div>
@@ -233,11 +254,11 @@ async function lockScreen(){try{if(navigator.wakeLock&&!wake)wake=await navigato
 async function startNav(){if(!route)return;navOn=true;idx=0;off=0;spoken={};lastFix=null;document.body.classList.add('nav');follow=true;$('#recenterBtn').style.display='none';saveState();lockScreen();
  const start=route.pts[0];cp=start;hd=brg(start,route.pts[Math.min(route.pts.length-1,5)]);showMe(start);
  map.easeTo({center:start,bearing:hd,zoom:17,pitch:58,duration:900,...camM()});
- if(!navigator.geolocation){toast('مرورگر از GPS پشتیبانی نمی‌کند');return}toast('در انتظار سیگنال GPS…');
+ if(!navigator.geolocation){toast('مرورگر از GPS پشتیبانی نمی‌کند');stopNav();return}toast('در انتظار سیگنال GPS…');
  wid=navigator.geolocation.watchPosition(p=>{const c=p.coords;fix([c.longitude,c.latitude],c.speed!=null&&!isNaN(c.speed)?c.speed*3.6:null,c.heading,c.accuracy,p.timestamp)},e=>toast(e.code===1?'اجازهٔ GPS داده نشد':'سیگنال GPS ضعیف است'),{enableHighAccuracy:true,maximumAge:0,timeout:15000});
  say('مسیریابی آغاز شد')}
 
-function fix(raw,sp,h,acc,ts){if(!route||!navOn)return;if(acc&&acc>120)return;gps=raw;
+function fix(raw,sp,h,acc,ts){if(!route||!navOn)return;if(acc&&acc>120){weakGps();return}gps=raw;
  let v=sp;if(v==null&&lastFix){const dt=(ts-lastFix.t)/1000;if(dt>.3)v=hav(lastFix.p,raw)/dt*3.6}lastFix={p:raw,t:ts};spd=spd*.5+(v||0)*.5;if(spd<2)spd=0;
  const pts=route.pts,cum=route.cum,tol=clamp(30+(acc||10)*1.5,50,160);
  let m=proj(raw,pts,Math.max(0,idx-3),idx+250);
@@ -338,9 +359,60 @@ try{const st=JSON.parse(localStorage.getItem('hudmap-state')||'null');
  if(st&&st.pts&&st.pts.length>1&&Date.now()-st.t<86400000){origin=st.o;dst=st.d;
   if(origin){orgMk=marker('marker-org');orgMk.setLngLat(origin).addTo(map);$('#qo').value='مبدا ذخیره‌شده'}
   if(dst){dstMk=marker('marker-dest');dstMk.setLngLat(dst).addTo(map);$('#qd').value='مقصد ذخیره‌شده'}
-  build({pts:st.pts,dur:st.dur,steps:st.steps});if(st.nav)startNav()}
+  build({pts:st.pts,dur:st.dur,steps:st.steps});if(st.nav&&confirm('ادامهٔ مسیریابی قبلی؟'))startNav()}
  else{if(st)clearState();getPos(c=>{showMe(c);map.jumpTo({center:c,zoom:14})},true)}}catch(e){}
 mark();tick();
+
+/* ================= v2 enhancements ================= */
+(function(){
+const LS=(k,v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}};
+[['gpsO','موقعیت من به‌عنوان مبدا'],['clrO','پاک کردن مبدا'],['clrD','پاک کردن مقصد'],['locBtn','موقعیت من'],['compass','قطب‌نما'],['vB','راهنمای صوتی'],['hB','HUD'],['xB','پایان مسیریابی'],['hudClose','خروج از HUD'],['hLoc','موقعیت من'],['hSet','تنظیمات'],['hFs','تمام‌صفحه']].forEach(([i,l])=>{const e=document.getElementById(i);e&&e.setAttribute('aria-label',l)});
+let wg=0;window.weakGps=()=>{if(Date.now()-wg>8000){wg=Date.now();toast('دقت GPS پایین است؛ منتظر سیگنال بهتر…')}};
+
+/* search: cancels stale requests, shows empty/error states, Enter picks first */
+let ctl=null,seq=0;
+window.search=async function(v,kind){ctl&&ctl.abort();ctl=new AbortController();const my=++seq,box=$('#res');$('#rec').innerHTML='';
+ try{const c=map.getCenter(),r=await fetch('https://api.neshan.org/v1/search?term='+encodeURIComponent(v)+'&lat='+c.lat+'&lng='+c.lng,{headers:{'Api-Key':CFG.SERVICE_KEY},signal:ctl.signal});
+  if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();if(my!==seq)return;
+  box.innerHTML='';const items=(j.items||[]).slice(0,7);
+  if(!items.length){const d=document.createElement('div');d.className='none';d.textContent='نتیجه‌ای پیدا نشد؛ عبارت دیگری بنویسید';box.appendChild(d);return}
+  items.forEach(it=>{const l=it.location||{},p=[l.x,l.y],d=document.createElement('div'),a=document.createElement('span'),s=document.createElement('small');
+   a.textContent=it.title||'';s.textContent=[it.region,it.address].filter(Boolean).join(' · ');d.append(a,s);
+   d.onclick=()=>{box.innerHTML='';kind==='o'?setOrigin(p,it.title):setDest(p,it.title);map.flyTo({center:p,zoom:15,speed:1.4})};box.appendChild(d)})
+ }catch(e){if(e.name==='AbortError')return;toast('جستجو ناموفق بود؛ اتصال یا کلید API را بررسی کنید')}};
+['#qo','#qd'].forEach(s=>$(s).addEventListener('keydown',e=>{if(e.key==='Enter'){const f=$('#res div:not(.none)');f&&f.click();e.target.blur()}}));
+
+/* recent destinations */
+const getR=()=>LS('hud-recent')||[];
+function addRecent(p,l){if(!l||!p)return;const r=getR().filter(x=>hav(x.p,p)>150);r.unshift({l,p});LS('hud-recent',r.slice(0,6))}
+function showRec(){const b=$('#rec'),r=getR();b.innerHTML='';if(!r.length||navOn)return;
+ r.forEach(x=>{const c=document.createElement('button');c.textContent=x.l;c.onclick=()=>{b.innerHTML='';active==='o'?setOrigin(x.p,x.l):setDest(x.p,x.l);map.flyTo({center:x.p,zoom:14})};b.appendChild(c)});
+ const z=document.createElement('button');z.className='z';z.textContent='پاک‌کردن';z.onclick=()=>{LS('hud-recent',[]);b.innerHTML=''};b.appendChild(z)}
+['#qo','#qd'].forEach(s=>{$(s).addEventListener('focus',()=>{if(!$(s).value)showRec()});$(s).addEventListener('input',()=>{$('#rec').innerHTML=''})});
+const _sd=window.setDest;
+window.setDest=function(p,l){_sd(p,l);if(l&&!/انتخاب‌شده|ذخیره‌شده/.test(l))addRecent(p,l);$('#rec').innerHTML=''};
+
+/* voice: picks a Persian voice, falls back to beep + vibration + toast */
+let fv=null,warned=false,au=null;
+const pv=()=>{try{fv=speechSynthesis.getVoices().find(v=>/^fa/i.test(v.lang))||null}catch(e){}};
+if(window.speechSynthesis){pv();speechSynthesis.onvoiceschanged=pv}
+function beep(){try{au=au||new(window.AudioContext||window.webkitAudioContext)();const o=au.createOscillator(),g=au.createGain();o.connect(g);g.connect(au.destination);o.frequency.value=880;g.gain.setValueAtTime(.15,au.currentTime);g.gain.exponentialRampToValueAtTime(.001,au.currentTime+.25);o.start();o.stop(au.currentTime+.26)}catch(e){}}
+window.say=function(t){if(muted)return;try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}
+ if(!window.speechSynthesis||!fv){beep();if(!warned){warned=true;toast('صدای فارسی روی این دستگاه نصب نیست؛ هشدار بصری و بوق فعال است')}return}
+ const u=new SpeechSynthesisUtterance(t);u.lang='fa-IR';u.voice=fv;speechSynthesis.cancel();speechSynthesis.speak(u)};
+
+/* traffic + day/night */
+let tr=false,day=false;
+$('#trBtn').onclick=e=>{tr=!tr;try{map.setTraffic(tr);hudMap&&hudMap.setTraffic(tr);e.currentTarget.classList.toggle('on',tr);toast(tr?'ترافیک روشن شد':'ترافیک خاموش شد')}catch(x){tr=!tr;toast('ترافیک در این نسخهٔ SDK پشتیبانی نمی‌شود')}};
+$('#stBtn').onclick=e=>{day=!day;try{const T=nmp_mapboxgl.Map.mapTypes;map.setMapType(day?T.neshanVector:T.neshanVectorNight);e.currentTarget.classList.toggle('on',day);
+ const re=()=>{try{route&&drawRoute(map,'main',route.pts)}catch(x){}};map.once('style.load',re);whenReady(map,re)}catch(x){day=!day;toast('تغییر سبک نقشه ممکن نشد')}};
+
+/* network + service worker */
+const net=$('#net'),nu=()=>net.classList.toggle('show',!navigator.onLine);
+addEventListener('online',()=>{nu();toast('اتصال برقرار شد')});addEventListener('offline',nu);nu();
+addEventListener('unhandledrejection',e=>console.warn('unhandled',e.reason));
+if('serviceWorker' in navigator&&/^https?:/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
 </script>
 </body>
 </html>
